@@ -9,7 +9,7 @@ import (
 )
 
 type User struct {
-	ID        string    `json:"id"`
+	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
 	Password  string    `json:"password"`
@@ -43,7 +43,7 @@ func NewUser(name, email, password string) (*User, error) {
 	}
 
 	return &User{
-		ID:        uuid.New().String(),
+		ID:        uuid.New(),
 		Name:      name,
 		Email:     email,
 		Password:  password,

@@ -53,7 +53,7 @@ func TestCreateUserUseCase_Execute(t *testing.T) {
 
 	// Mock do retorno de entities.NewUser
 	user := &entities.User{
-		ID:        uuid.New().String(),
+		ID:        uuid.New(),
 		Name:      input.Name,
 		Email:     input.Email,
 		Password:  input.Password,
@@ -79,11 +79,11 @@ func TestCreateUserUseCase_Execute(t *testing.T) {
 // Teste para o método GetById
 func TestGetUserUseCase_GetById(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	getUserUseCase := NewGetUserUseCase(mockRepo)
+	getUserUseCase := NewGetByIdUserUseCase(mockRepo)
 
 	// Dados de entrada
-	userID := "123e4567-e89b-12d3-a456-426614174000" // Exemplo de ID em formato string
-	input := GetByIdInputDTO{ID: userID}
+	userID := uuid.New() // Exemplo de ID em formato string
+	input := GetByIdInputDTO{ID: userID.String()}
 
 	// Dados simulados
 	user := &entities.User{
@@ -98,7 +98,7 @@ func TestGetUserUseCase_GetById(t *testing.T) {
 	mockRepo.On("GetByID", userID).Return(user, nil)
 
 	// Chama o método GetById
-	output, err := getUserUseCase.GetById(input)
+	output, err := getUserUseCase.Execute(input)
 
 	// Verificações
 	assert.NoError(t, err)
@@ -113,7 +113,7 @@ func TestGetUserUseCase_GetById(t *testing.T) {
 // Teste para o método GetByEmail
 func TestGetUserUseCase_GetByEmail(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	getUserUseCase := NewGetUserUseCase(mockRepo)
+	getUserUseCase := NewGetByEmailUserUseCase(mockRepo)
 
 	// Dados de entrada
 	email := "johndoe@example.com"
@@ -121,7 +121,7 @@ func TestGetUserUseCase_GetByEmail(t *testing.T) {
 
 	// Dados simulados
 	user := &entities.User{
-		ID:        "123e4567-e89b-12d3-a456-426614174000", // Exemplo de ID em formato string
+		ID:        uuid.New(),
 		Name:      "John Doe",
 		Email:     email,
 		CreatedAt: time.Now(),
@@ -132,7 +132,7 @@ func TestGetUserUseCase_GetByEmail(t *testing.T) {
 	mockRepo.On("GetByEmail", email).Return(user, nil)
 
 	// Chama o método GetByEmail
-	output, err := getUserUseCase.GetByEmail(input)
+	output, err := getUserUseCase.Execute(input)
 
 	// Verificações
 	assert.NoError(t, err)

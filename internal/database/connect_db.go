@@ -11,7 +11,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func ConnectDB() {
+func ConnectDB() (*sql.DB, error) {
 	godotenv.Load(".env")
 	postgresURL := os.Getenv("POSTGRES_URL")
 
@@ -23,27 +23,23 @@ func ConnectDB() {
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
-	defer db.Close()
 
-	// Configurando o driver postgres para o migrate
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
 		log.Fatalf("Could not create postgres driver: %v\n", err)
 	}
 
-	// Usando o caminho correto para as migrações
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://internal/database/migrations", // Caminho das migrações
+		"file://internal/database/migrations",
 		"postgres", driver)
 	if err != nil {
 		log.Fatalf("Migration failed: %v\n", err)
 	}
 
-	// Subir as migrações
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		log.Fatalf("An error occurred while running migrations: %v\n", err)
 	}
 
 	log.Println("Migrations applied successfully")
-
+	return db, nil
 }

@@ -46,7 +46,7 @@ func TestUserRepository(t *testing.T) {
 	// Dados de teste
 	userID := uuid.New()
 	user := &entities.User{
-		ID:        userID.String(),
+		ID:        userID,
 		Name:      "John Doe",
 		Email:     "johndoe@example.com",
 		Password:  "password123",

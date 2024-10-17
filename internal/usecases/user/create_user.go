@@ -36,7 +36,7 @@ func (uc *CreateUserUseCase) Execute(input CreateUserInputDTO) (*CreateUserOutpu
 	}
 
 	return &CreateUserOutputDTO{
-		ID:        user.ID,
+		ID:        user.ID.String(),
 		Name:      user.Name,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt.String(),

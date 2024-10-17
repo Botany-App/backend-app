@@ -3,7 +3,7 @@ module github.com/lucasBiazon/botany-back
 go 1.22.3
 
 require (
-	github.com/gofrs/uuid v4.4.0+incompatible
+	github.com/go-chi/chi v1.5.5
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.1
