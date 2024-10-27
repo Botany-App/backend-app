@@ -3,7 +3,7 @@ CREATE TABLE plants (
     name_plant VARCHAR(50) NOT NULL,
     description_plant VARCHAR(100) NOT NULL,
     location_plant VARCHAR(50) NOT NULL,
-    planting_time TIMESTAMP NOT NULL,
+    planting_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     irrigation_week NUMERIC NOT NULL,
     sun_exposure NUMERIC NOT NULL,
     fertilization_week NUMERIC NOT NULL,

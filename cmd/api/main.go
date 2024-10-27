@@ -5,32 +5,32 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/lucasBiazon/botany-back/internal/database"
 	"github.com/lucasBiazon/botany-back/internal/infra/repositories"
 	usecases "github.com/lucasBiazon/botany-back/internal/usecases/user"
 	handlers "github.com/lucasBiazon/botany-back/internal/web"
-
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func main() {
-	db, err := database.ConnectDB()
+	db, clientRedis, err := database.InitDB()
 	if err != nil {
 		panic(err)
 	}
 
-	repository := repositories.NewUserRepository(db)
-	CreateUserUseCase := usecases.NewCreateUserUseCase(repository)
+	repository := repositories.NewUserRepository(db, clientRedis)
+	RegisterUserUseCase := usecases.NewRegisterUserUseCase(repository)
 	GetByIdUserUseCase := usecases.NewGetByIdUserUseCase(repository)
 	GetByEmailUserUseCase := usecases.NewGetByEmailUserUseCase(repository)
+	CreateUserUseCase := usecases.NewCreateUserUseCase(repository)
 
-	userHandlers := handlers.NewUserHandler(CreateUserUseCase, GetByIdUserUseCase, GetByEmailUserUseCase)
+	userHandlers := handlers.NewUserHandler(CreateUserUseCase, GetByIdUserUseCase, GetByEmailUserUseCase, RegisterUserUseCase)
 	r := chi.NewRouter()
-	r.Post("/user", userHandlers.CreateUserHandler)
+	r.Post("/user/register", userHandlers.RegisterUserHandler)
+	r.Post("/user/register/create", userHandlers.CreateUserHandler)
 	r.Get("/user", userHandlers.GetUserByIdHandler)
 	r.Get("/user/email", userHandlers.GetUserByEmailHandler)
 
 	http.ListenAndServe(":8081", r)
 	log.Println("Server running on port 8080")
+
 }

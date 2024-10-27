@@ -5,6 +5,7 @@ CREATE TABLE species (
     fertilization_weight NUMERIC NOT NULL,
     sun_weight NUMERIC NOT NULL,
     irrigation_weight NUMERIC NOT NULL,
+    time_to_harvest NUMERIC NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

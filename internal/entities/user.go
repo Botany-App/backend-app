@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
 	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	Password  string    `json:"password"`
+	Name      string    `json:"name" validate:"required"`
+	Email     string    `json:"email" validate:"required,email"`
+	Password  string    `json:"password" validate:"required"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -23,6 +24,8 @@ type UserRepository interface {
 	GetByEmail(email string) (*User, error)
 	Update(user *User) error
 	Delete(id string) error
+	HostCode(*User) error
+	VerifyEmail(email string, codeInput string) (*User, error)
 }
 
 func NewUser(name, email, password string) (*User, error) {
@@ -42,13 +45,15 @@ func NewUser(name, email, password string) (*User, error) {
 		return nil, errors.New("invalid email")
 	}
 
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
 	return &User{
-		ID:        uuid.New(),
-		Name:      name,
-		Email:     email,
-		Password:  password,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		ID:       uuid.New(),
+		Name:     name,
+		Email:    email,
+		Password: string(hashedPassword),
 	}, nil
 }
 

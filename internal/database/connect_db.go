@@ -1,20 +1,40 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"os"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file" // Import necessário para usar arquivos locais
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 )
 
-func ConnectDB() (*sql.DB, error) {
-	godotenv.Load(".env")
-	postgresURL := os.Getenv("POSTGRES_URL")
+func InitDB() (*sql.DB, *redis.Client, error) {
+	db, err := ConnectPG()
+	if err != nil {
+		return nil, nil, err
+	}
 
+	rd, err := InitRedisClient(context.Background())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return db, rd, nil
+}
+
+func ConnectPG() (*sql.DB, error) {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v\n", err)
+	}
+
+	postgresURL := os.Getenv("POSTGRES_URL")
 	if postgresURL == "" {
 		log.Fatal("POSTGRES_URL is not set")
 	}
@@ -22,6 +42,11 @@ func ConnectDB() (*sql.DB, error) {
 	db, err := sql.Open("pgx", postgresURL)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
+	}
+
+	// Verificando a conexão com o banco de dados
+	if err = db.Ping(); err != nil {
+		log.Fatalf("Failed to ping the database: %v\n", err)
 	}
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
@@ -42,4 +67,18 @@ func ConnectDB() (*sql.DB, error) {
 
 	log.Println("Migrations applied successfully")
 	return db, nil
+}
+
+func InitRedisClient(ctx context.Context) (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ADDR"),
+		Password: "",
+		DB:       0,
+	})
+	_, err := client.Ping(ctx).Result()
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+
+	return client, nil
 }
