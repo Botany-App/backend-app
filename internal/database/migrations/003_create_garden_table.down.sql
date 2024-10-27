@@ -1,2 +1,0 @@
-DROP IF EXISTS TABLE gardens;
-DROP IF EXISTS TABLE  gardenPlant;

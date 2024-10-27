@@ -31,6 +31,6 @@ func main() {
 	r.Get("/user", userHandlers.GetUserByIdHandler)
 	r.Get("/user/email", userHandlers.GetUserByEmailHandler)
 
-	http.ListenAndServe(":8080", r)
+	http.ListenAndServe(":8081", r)
 	log.Println("Server running on port 8080")
 }

@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS categories_plants_and_gardens;

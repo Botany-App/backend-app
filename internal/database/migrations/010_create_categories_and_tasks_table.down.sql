@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS categories_and_tasks;
