@@ -144,3 +144,19 @@ func (r *UserRepositoryPg) VerifyEmail(email, codeInput string) (*entities.User,
 
 	return user, nil
 }
+
+func (r *UserRepositoryPg) Login(email, password string) (*entities.User, error) {
+	query := `SELECT ID, name_user, email, password_hash, created_at, updated_at FROM users WHERE email=$1 AND password_hash=$2`
+
+	row := r.DB.QueryRow(query, email, password)
+	user := &entities.User{}
+	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return user, nil
+}

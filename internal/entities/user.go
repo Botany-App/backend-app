@@ -26,6 +26,7 @@ type UserRepository interface {
 	Delete(id string) error
 	HostCode(*User) error
 	VerifyEmail(email string, codeInput string) (*User, error)
+	Login(email string, password string) (*User, error)
 }
 
 func NewUser(name, email, password string) (*User, error) {

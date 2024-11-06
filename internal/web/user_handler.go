@@ -13,14 +13,16 @@ type UserHandlers struct {
 	GetByEmailUserUseCase *usecases.GetByEmailUserUseCase
 	GetByIdUserUseCase    *usecases.GetByIdUserUseCase
 	CreateUserUseCase     *usecases.CreateUserUseCase
+	LoginUserUseCase      *usecases.LoginUserUseCase
 }
 
-func NewUserHandler(createUserUseCase *usecases.CreateUserUseCase, getByIdUserUseCase *usecases.GetByIdUserUseCase, getByEmailUserUseCase *usecases.GetByEmailUserUseCase, registerUserUseCase *usecases.RegisterUserUseCase) *UserHandlers {
+func NewUserHandler(createUserUseCase *usecases.CreateUserUseCase, getByIdUserUseCase *usecases.GetByIdUserUseCase, getByEmailUserUseCase *usecases.GetByEmailUserUseCase, registerUserUseCase *usecases.RegisterUserUseCase, loginUserUseCase *usecases.LoginUserUseCase) *UserHandlers {
 	return &UserHandlers{
 		CreateUserUseCase:     createUserUseCase,
 		GetByEmailUserUseCase: getByEmailUserUseCase,
 		GetByIdUserUseCase:    getByIdUserUseCase,
 		RegisterUserUseCase:   registerUserUseCase,
+		LoginUserUseCase:      loginUserUseCase,
 	}
 }
 
@@ -85,6 +87,40 @@ func (u *UserHandlers) GetUserByIdHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	output, err := u.GetByIdUserUseCase.Execute(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(output)
+}
+
+func (u *UserHandlers) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+	// var input usecases.UpdateUserInputDTO
+	// err := json.NewDecoder(r.Body).Decode(&input)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
+	// err = u.UpdateUserUseCase.Execute(input)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
+	// json.NewEncoder(w).Encode("Usuário atualizado com sucesso")
+}
+
+func (u *UserHandlers) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases.LoginUserInputDTO
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	output, err := u.LoginUserUseCase.Execute(input)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

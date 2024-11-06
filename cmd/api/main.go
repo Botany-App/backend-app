@@ -22,15 +22,16 @@ func main() {
 	GetByIdUserUseCase := usecases.NewGetByIdUserUseCase(repository)
 	GetByEmailUserUseCase := usecases.NewGetByEmailUserUseCase(repository)
 	CreateUserUseCase := usecases.NewCreateUserUseCase(repository)
+	LoginUserUseCase := usecases.NewLoginUserUseCase(repository)
 
-	userHandlers := handlers.NewUserHandler(CreateUserUseCase, GetByIdUserUseCase, GetByEmailUserUseCase, RegisterUserUseCase)
+	userHandlers := handlers.NewUserHandler(CreateUserUseCase, GetByIdUserUseCase, GetByEmailUserUseCase, RegisterUserUseCase, LoginUserUseCase)
 	r := chi.NewRouter()
-	r.Post("/user/register", userHandlers.RegisterUserHandler)
-	r.Post("/user/register/create", userHandlers.CreateUserHandler)
+	r.Post("/user/register/part1", userHandlers.RegisterUserHandler)
+	r.Post("/user/register/par2", userHandlers.CreateUserHandler)
+	r.Post("/user/login", userHandlers.LoginUserHandler)
 	r.Get("/user", userHandlers.GetUserByIdHandler)
 	r.Get("/user/email", userHandlers.GetUserByEmailHandler)
 
 	http.ListenAndServe(":8081", r)
 	log.Println("Server running on port 8080")
-
 }
