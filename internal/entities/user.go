@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"context"
 	"errors"
 	"regexp"
 	"time"
@@ -19,14 +20,16 @@ type User struct {
 }
 
 type UserRepository interface {
-	Create(user *User) error
-	GetByID(id string) (*User, error)
-	GetByEmail(email string) (*User, error)
-	Update(user *User) error
-	Delete(id string) error
-	HostCode(*User) error
-	VerifyEmail(email string, codeInput string) (*User, error)
-	Login(email string, password string) (*User, error)
+	Create(ctx context.Context, user *User) error
+	StoreToken(ctx context.Context, email, token string) error
+	ResendToken(ctx context.Context, email string, token string) error
+	ActivateAccount(ctx context.Context, email, token string) error
+	Login(ctx context.Context, email, password string) (string, error)
+	GetByID(ctx context.Context, id string) (*User, error)
+	GetByEmail(ctx context.Context, email string) (*User, error)
+	UpdatePassword(ctx context.Context, email, password string) error
+	Update(ctx context.Context, user *User) error
+	Delete(ctx context.Context, id string) error
 }
 
 func NewUser(name, email, password string) (*User, error) {
@@ -46,15 +49,20 @@ func NewUser(name, email, password string) (*User, error) {
 		return nil, errors.New("invalid email")
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	id := uuid.New()
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
+
 	return &User{
-		ID:       uuid.New(),
-		Name:     name,
-		Email:    email,
-		Password: string(hashedPassword),
+		ID:        id,
+		Name:      name,
+		Email:     email,
+		Password:  string(passwordHash),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}, nil
 }
 

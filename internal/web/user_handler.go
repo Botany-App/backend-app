@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,123 +10,60 @@ import (
 )
 
 type UserHandlers struct {
-	RegisterUserUseCase   *usecases.RegisterUserUseCase
-	GetByEmailUserUseCase *usecases.GetByEmailUserUseCase
-	GetByIdUserUseCase    *usecases.GetByIdUserUseCase
-	CreateUserUseCase     *usecases.CreateUserUseCase
-	LoginUserUseCase      *usecases.LoginUserUseCase
+	RegisterUserUseCase *usecases.RegisterUserUseCase
 }
 
-func NewUserHandler(createUserUseCase *usecases.CreateUserUseCase, getByIdUserUseCase *usecases.GetByIdUserUseCase, getByEmailUserUseCase *usecases.GetByEmailUserUseCase, registerUserUseCase *usecases.RegisterUserUseCase, loginUserUseCase *usecases.LoginUserUseCase) *UserHandlers {
+func NewUserHandlers(registerUserUseCase *usecases.RegisterUserUseCase) *UserHandlers {
 	return &UserHandlers{
-		CreateUserUseCase:     createUserUseCase,
-		GetByEmailUserUseCase: getByEmailUserUseCase,
-		GetByIdUserUseCase:    getByIdUserUseCase,
-		RegisterUserUseCase:   registerUserUseCase,
-		LoginUserUseCase:      loginUserUseCase,
+		RegisterUserUseCase: registerUserUseCase,
 	}
 }
 
-func (u *UserHandlers) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandlers) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 	var input usecases.RegisterUserInputDTO
-	err := json.NewDecoder(r.Body).Decode(&input)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	email, err := u.RegisterUserUseCase.Execute(input)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(fmt.Sprintf("Código enviado para: %s", email))
-}
-
-func (u *UserHandlers) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	var input usecases.CreateUserInputDTO
-	err := json.NewDecoder(r.Body).Decode(&input)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	err = u.CreateUserUseCase.Execute(input)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode("Usuário criado com sucesso")
-
-}
-
-func (u *UserHandlers) GetUserByEmailHandler(w http.ResponseWriter, r *http.Request) {
-	var email usecases.GetByEmailInputDTO
-	err := json.NewDecoder(r.Body).Decode(&email)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	output, err := u.GetByEmailUserUseCase.Execute(email)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := h.RegisterUserUseCase.StartRegistration(context.Background(), input); err != nil {
+		json.NewEncoder(w).Encode(fmt.Sprintf("Erro ao registrar usuário: %s", err))
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(output)
+	json.NewEncoder(w).Encode(fmt.Sprintf("Código enviado para: %s", input.Email))
 }
 
-func (u *UserHandlers) GetUserByIdHandler(w http.ResponseWriter, r *http.Request) {
-	var id usecases.GetByIdInputDTO
-	err := json.NewDecoder(r.Body).Decode(&id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+func (h *UserHandlers) ConfirmEmailHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases.ConfirmEmailInputDTO
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	output, err := u.GetByIdUserUseCase.Execute(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := h.RegisterUserUseCase.ConfirmEmail(context.Background(), input.Email, input.Token); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(fmt.Sprintf("Erro ao confirmar email: %s", err))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(output)
+	json.NewEncoder(w).Encode(fmt.Sprintf("Email confirmado: %s \n Conta criada com sucesso!", input.Email))
+
 }
 
-func (u *UserHandlers) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
-	// var input usecases.UpdateUserInputDTO
-	// err := json.NewDecoder(r.Body).Decode(&input)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
-	// err = u.UpdateUserUseCase.Execute(input)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-	// w.Header().Set("Content-Type", "application/json")
-	// w.WriteHeader(http.StatusOK)
-	// json.NewEncoder(w).Encode("Usuário atualizado com sucesso")
-}
-
-func (u *UserHandlers) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
-	var input usecases.LoginUserInputDTO
-	err := json.NewDecoder(r.Body).Decode(&input)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+func (h *UserHandlers) ResendTokenHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases.ResendTokenInputDTO
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	output, err := u.LoginUserUseCase.Execute(input)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := h.RegisterUserUseCase.ResendToken(context.Background(), input.Email); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(fmt.Sprintf("Erro ao reenviar token: %s", err))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(output)
+	json.NewEncoder(w).Encode(fmt.Sprintf("Código reenviado para: %s", input.Email))
 }

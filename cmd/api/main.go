@@ -1,10 +1,14 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
+	"os"
+	"runtime"
+	"sync"
 
 	"github.com/go-chi/chi"
+	"github.com/joho/godotenv"
 	"github.com/lucasBiazon/botany-back/internal/database"
 	"github.com/lucasBiazon/botany-back/internal/infra/repositories"
 	usecases "github.com/lucasBiazon/botany-back/internal/usecases/user"
@@ -12,26 +16,44 @@ import (
 )
 
 func main() {
+	// go routines
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Println("Error loading .env file")
+	}
+	runtime.GOMAXPROCS(1)
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+
+	// Init database and redis
 	db, clientRedis, err := database.InitDB()
 	if err != nil {
 		panic(err)
 	}
 
+	// // Init user use cases
+
 	repository := repositories.NewUserRepository(db, clientRedis)
-	RegisterUserUseCase := usecases.NewRegisterUserUseCase(repository)
-	GetByIdUserUseCase := usecases.NewGetByIdUserUseCase(repository)
-	GetByEmailUserUseCase := usecases.NewGetByEmailUserUseCase(repository)
-	CreateUserUseCase := usecases.NewCreateUserUseCase(repository)
-	LoginUserUseCase := usecases.NewLoginUserUseCase(repository)
+	RegisterUserRoutes := usecases.NewRegisterUserUseCase(repository)
+	useHandlers := handlers.NewUserHandlers(RegisterUserRoutes)
 
-	userHandlers := handlers.NewUserHandler(CreateUserUseCase, GetByIdUserUseCase, GetByEmailUserUseCase, RegisterUserUseCase, LoginUserUseCase)
 	r := chi.NewRouter()
-	r.Post("/user/register/part1", userHandlers.RegisterUserHandler)
-	r.Post("/user/register/par2", userHandlers.CreateUserHandler)
-	r.Post("/user/login", userHandlers.LoginUserHandler)
-	r.Get("/user", userHandlers.GetUserByIdHandler)
-	r.Get("/user/email", userHandlers.GetUserByEmailHandler)
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Post("/register/1", useHandlers.RegisterUserHandler)
+		r.Post("/register/2", useHandlers.ConfirmEmailHandler)
+		r.Post("/register/resendToken", useHandlers.ResendTokenHandler)
+	})
 
-	http.ListenAndServe(":8081", r)
-	log.Println("Server running on port 8080")
+	// Start server
+	local := os.Getenv("API_PORT")
+	if local == "" {
+		local = "8081"
+	}
+	go func() {
+		defer wg.Done()
+		http.ListenAndServe(fmt.Sprintf(":%s", local), r)
+	}()
+	fmt.Printf("Server running on port %s\n", local)
+
+	wg.Wait()
 }

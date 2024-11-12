@@ -2,7 +2,8 @@ CREATE TABLE users (
     ID UUID PRIMARY KEY,
     name_user VARCHAR(50) NOT NULL,
     email VARCHAR(50) NOT NULL,
-    password_hash TEXT NOT NULL,
+    isActive BOOLEAN DEFAULT FALSE,
+    password_hash VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

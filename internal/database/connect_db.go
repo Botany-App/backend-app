@@ -11,7 +11,6 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/joho/godotenv"
 )
 
 func InitDB() (*sql.DB, *redis.Client, error) {
@@ -25,14 +24,11 @@ func InitDB() (*sql.DB, *redis.Client, error) {
 		return nil, nil, err
 	}
 
+	log.Println("Connected to the database and Redis")
 	return db, rd, nil
 }
 
 func ConnectPG() (*sql.DB, error) {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v\n", err)
-	}
 
 	postgresURL := os.Getenv("POSTGRES_URL")
 	if postgresURL == "" {
