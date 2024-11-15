@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/lucasBiazon/botany-back/internal/entities"
-	"github.com/lucasBiazon/botany-back/internal/utils"
+	services "github.com/lucasBiazon/botany-back/internal/service"
 )
 
 type RegisterUserInputDTO struct {
@@ -30,44 +30,51 @@ func NewRegisterUserUseCase(userRepository entities.UserRepository) *RegisterUse
 	return &RegisterUserUseCase{userRepository: userRepository}
 }
 
-func (u *RegisterUserUseCase) StartRegistration(ctx context.Context, input RegisterUserInputDTO) error {
+func (uc *RegisterUserUseCase) StartRegistration(ctx context.Context, input RegisterUserInputDTO) error {
 	user, err := entities.NewUser(input.Name, input.Email, input.Password)
 	if err != nil {
 		return err
 	}
-	log.Print(user)
-	if err := u.userRepository.Create(ctx, user); err != nil {
+	log.Println("---Criando user---")
+	if err := uc.userRepository.Create(ctx, user); err != nil {
 		return err
 	}
 
-	tokenVerification, err := utils.GenerateCode()
+	log.Println("---Gerando token---")
+	tokenVerification, err := services.NewEmailService().GenerateCode()
 	if err != nil {
 		return err
 	}
-	if err = u.userRepository.StoreToken(ctx, user.Email, tokenVerification); err != nil {
+
+	log.Println("---Salvando token---")
+	if err = uc.userRepository.StoreToken(ctx, user.Email, tokenVerification); err != nil {
 		return err
 	}
 
-	if err = utils.SendEmail(user.Email, tokenVerification); err != nil {
+	log.Println("---Enviando email---")
+	if err = services.NewEmailService().SendEmail(user.Email, tokenVerification); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (u *RegisterUserUseCase) ConfirmEmail(ctx context.Context, email, token string) error {
-	err := u.userRepository.ActivateAccount(ctx, email, token)
+func (uc *RegisterUserUseCase) ConfirmEmail(ctx context.Context, email, token string) error {
+	log.Println("---Confirming email---")
+	err := uc.userRepository.ActivateAccount(ctx, email, token)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (u *RegisterUserUseCase) ResendToken(ctx context.Context, email string) error {
-	newToken, err := utils.GenerateCode()
+func (uc *RegisterUserUseCase) ResendToken(ctx context.Context, email string) error {
+	log.Println("---Gerando um novo token---")
+	newToken, err := services.NewEmailService().GenerateCode()
 	if err != nil {
 		return err
 	}
-	err = u.userRepository.ResendToken(ctx, email, newToken)
+	log.Println("---Resend token---")
+	err = uc.userRepository.ResendToken(ctx, email, newToken)
 	if err != nil {
 		return err
 	}

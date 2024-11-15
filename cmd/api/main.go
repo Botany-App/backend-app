@@ -7,12 +7,10 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
 	"github.com/lucasBiazon/botany-back/internal/database"
-	"github.com/lucasBiazon/botany-back/internal/infra/repositories"
-	usecases "github.com/lucasBiazon/botany-back/internal/usecases/user"
-	handlers "github.com/lucasBiazon/botany-back/internal/web"
+	"github.com/lucasBiazon/botany-back/internal/routes"
+	services "github.com/lucasBiazon/botany-back/internal/service"
 )
 
 func main() {
@@ -32,26 +30,23 @@ func main() {
 	}
 
 	// // Init user use cases
-
-	repository := repositories.NewUserRepository(db, clientRedis)
-	RegisterUserRoutes := usecases.NewRegisterUserUseCase(repository)
-	useHandlers := handlers.NewUserHandlers(RegisterUserRoutes)
-
-	r := chi.NewRouter()
-	r.Route("/api/v1", func(r chi.Router) {
-		r.Post("/register/1", useHandlers.RegisterUserHandler)
-		r.Post("/register/2", useHandlers.ConfirmEmailHandler)
-		r.Post("/register/resendToken", useHandlers.ResendTokenHandler)
-	})
+	secretKey := os.Getenv("JWT_SECRET_KEY")
+	jwtService := services.NewJWTService(secretKey)
+	r, err := routes.InitializeRoutes(db, clientRedis, jwtService)
+	if err != nil {
+		panic(err)
+	}
 
 	// Start server
 	local := os.Getenv("API_PORT")
 	if local == "" {
-		local = "8081"
+		local = "8080"
 	}
 	go func() {
 		defer wg.Done()
-		http.ListenAndServe(fmt.Sprintf(":%s", local), r)
+		for {
+			http.ListenAndServe(fmt.Sprintf(":%s", local), r)
+		}
 	}()
 	fmt.Printf("Server running on port %s\n", local)
 

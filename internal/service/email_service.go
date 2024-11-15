@@ -1,4 +1,4 @@
-package utils
+package services
 
 import (
 	"crypto/rand"
@@ -10,7 +10,19 @@ import (
 	gomail "gopkg.in/mail.v2"
 )
 
-func GenerateCode() (string, error) {
+type EmailService interface {
+	GenerateCode() (string, error)
+	SendEmail(inputEmail string, code string) error
+}
+
+type EmailServiceImpl struct {
+}
+
+func NewEmailService() *EmailServiceImpl {
+	return &EmailServiceImpl{}
+}
+
+func (e *EmailServiceImpl) GenerateCode() (string, error) {
 	max := big.NewInt(1000000)
 	num, err := rand.Int(rand.Reader, max)
 	if err != nil {
@@ -19,7 +31,7 @@ func GenerateCode() (string, error) {
 	return fmt.Sprintf("%06d", num), nil
 }
 
-func SendEmail(inputEmail string, code string) error {
+func (e *EmailServiceImpl) SendEmail(inputEmail string, code string) error {
 	log.Println("Sending email to:", inputEmail)
 	htmlCorpo := fmt.Sprintf(`
         <!DOCTYPE html>

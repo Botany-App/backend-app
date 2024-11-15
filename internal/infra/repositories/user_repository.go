@@ -155,20 +155,20 @@ func (r *UserRepositoryImpl) ActivateAccount(ctx context.Context, email, token s
 }
 
 func (r *UserRepositoryImpl) Login(ctx context.Context, email, password string) (string, error) {
-	query := `SELECT password_hash FROM users WHERE email=$1`
+	query := `SELECT ID, password_hash FROM users WHERE email=$1`
 	row := r.DB.QueryRow(query, email)
-	var passwordHash string
-	err := row.Scan(&passwordHash)
+	var passwordHash, ID string
+	err := row.Scan(&ID, &passwordHash)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "", errors.New("user not found")
+			return "not found", errors.New("user not found")
 		}
 		return "", err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
 	if err != nil {
-		return "", errors.New("invalid password")
+		return "invalid password", errors.New("invalid password")
 	}
-	return "token", nil
+	return ID, nil
 }
