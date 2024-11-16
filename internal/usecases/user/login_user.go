@@ -42,6 +42,6 @@ func (uc *LoginUserUseCase) Execute(ctx context.Context, email, password string)
 	if err != nil {
 		return "", err
 	}
-
+	log.Println("-", id)
 	return tokenJWT, nil
 }

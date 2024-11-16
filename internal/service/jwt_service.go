@@ -1,9 +1,11 @@
 package services
 
 import (
+	"errors"
+	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type JWTService interface {
@@ -32,9 +34,37 @@ func (j *JWTServiceImpl) GenerateToken(userID string) (string, error) {
 
 func (j *JWTServiceImpl) ValidateToken(tokenString string) (*jwt.Token, error) {
 	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Verificar método de assinatura
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, jwt.ErrSignatureInvalid
 		}
 		return []byte(j.secretKey), nil
 	})
+}
+
+func ExtractUserIDFromToken(tokenString string, jwtService JWTService) (string, error) {
+	if tokenString == "" {
+		return "", errors.New("token não fornecido")
+	}
+
+	if strings.HasPrefix(tokenString, "Bearer ") {
+		tokenString = strings.Split(tokenString, " ")[1]
+	}
+
+	token, err := jwtService.ValidateToken(tokenString)
+	if err != nil || !token.Valid {
+		return "", errors.New("token inválido ou expirado")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", errors.New("falha ao obter claims do token")
+	}
+
+	userID, ok := claims["user_id"].(string)
+	if !ok {
+		return "", errors.New("userID não encontrado no token")
+	}
+
+	return userID, nil
 }

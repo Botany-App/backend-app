@@ -4,23 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 
-	"github.com/go-chi/chi"
+	services "github.com/lucasBiazon/botany-back/internal/service"
 	usecases "github.com/lucasBiazon/botany-back/internal/usecases/user"
 )
 
 type UserHandlers struct {
 	RegisterUserUseCase *usecases.RegisterUserUseCase
 	LoginUserUseCase    *usecases.LoginUserUseCase
-	GetUserUseCase      *usecases.GetUserUseCase
+	GetUserByIdUseCase  *usecases.GetUserByIdUseCase
 }
 
-func NewUserHandlers(registerUserUseCase *usecases.RegisterUserUseCase, loginUserUseCase *usecases.LoginUserUseCase, getUserUseCase *usecases.GetUserUseCase) *UserHandlers {
+func NewUserHandlers(registerUserUseCase *usecases.RegisterUserUseCase, loginUserUseCase *usecases.LoginUserUseCase, getUserByIdUseCase *usecases.GetUserByIdUseCase) *UserHandlers {
 	return &UserHandlers{
 		RegisterUserUseCase: registerUserUseCase,
 		LoginUserUseCase:    loginUserUseCase,
-		GetUserUseCase:      getUserUseCase,
+		GetUserByIdUseCase:  getUserByIdUseCase,
 	}
 }
 
@@ -91,17 +93,27 @@ func (h *UserHandlers) LoginUserHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *UserHandlers) GetByIdUserHandler(w http.ResponseWriter, r *http.Request) {
-	userID := chi.URLParam(r, "id")
+	auth := r.Header.Get("Authorization")
+	userID, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
+	if err != nil {
+		log.Println("Erro ao extrair userID:", err)
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Token inválido ou expirado"})
+		return
+	}
 	if userID == "" {
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "ID de usuário não encontrado"})
 		return
 	}
-	user, err := h.GetUserUseCase.GetUserById(context.Background(), userID)
+
+	user, err := h.GetUserByIdUseCase.GetUserById(context.Background(), userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(fmt.Sprintf("Erro ao buscar usuário: %s", err))
+		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("Erro ao buscar usuário: %s", err)})
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)

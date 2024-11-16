@@ -17,7 +17,7 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 	repository := repositories.NewUserRepository(db, clientRedis)
 	RegisterUserRoutes := usecases.NewRegisterUserUseCase(repository)
 	LoginUserRoutes := usecases.NewLoginUserUseCase(repository)
-	GetUserRoutes := usecases.NewGetUserUseCase(repository)
+	GetUserRoutes := usecases.NewGetUserByIdUseCase(repository)
 	useHandlers := handlers.NewUserHandlers(RegisterUserRoutes, LoginUserRoutes, GetUserRoutes)
 
 	r := chi.NewRouter()
@@ -29,7 +29,7 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.AuthMiddleware(jwtService))
-			r.Get("/user/{ID}", useHandlers.GetByIdUserHandler)
+			r.Get("/user", useHandlers.GetByIdUserHandler)
 		})
 	})
 
