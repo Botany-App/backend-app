@@ -13,16 +13,26 @@ import (
 )
 
 type UserHandlers struct {
-	RegisterUserUseCase *usecases.RegisterUserUseCase
-	LoginUserUseCase    *usecases.LoginUserUseCase
-	GetUserByIdUseCase  *usecases.GetUserByIdUseCase
+	RegisterUserUseCase             *usecases.RegisterUserUseCase
+	LoginUserUseCase                *usecases.LoginUserUseCase
+	GetUserByIdUseCase              *usecases.GetUserByIdUseCase
+	DeleteUserUseCase               *usecases.DeleteUserUseCase
+	UpdateUserUseCase               *usecases.UpdateUserUseCase
+	RequestPasswordResetUserUseCase *usecases.RequestPasswordResetUserUseCase
+	ResetPasswordUserUseCase        *usecases.ResetPasswordUserUseCase
 }
 
-func NewUserHandlers(registerUserUseCase *usecases.RegisterUserUseCase, loginUserUseCase *usecases.LoginUserUseCase, getUserByIdUseCase *usecases.GetUserByIdUseCase) *UserHandlers {
+func NewUserHandlers(registerUserUseCase *usecases.RegisterUserUseCase, loginUserUseCase *usecases.LoginUserUseCase,
+	getUserByIdUseCase *usecases.GetUserByIdUseCase, deleteUserUseCase *usecases.DeleteUserUseCase, updateUserUseCase *usecases.UpdateUserUseCase,
+	requestPasswordResetUserUseCase *usecases.RequestPasswordResetUserUseCase, resetPasswordUserUseCase *usecases.ResetPasswordUserUseCase) *UserHandlers {
 	return &UserHandlers{
-		RegisterUserUseCase: registerUserUseCase,
-		LoginUserUseCase:    loginUserUseCase,
-		GetUserByIdUseCase:  getUserByIdUseCase,
+		RegisterUserUseCase:             registerUserUseCase,
+		LoginUserUseCase:                loginUserUseCase,
+		GetUserByIdUseCase:              getUserByIdUseCase,
+		DeleteUserUseCase:               deleteUserUseCase,
+		UpdateUserUseCase:               updateUserUseCase,
+		RequestPasswordResetUserUseCase: requestPasswordResetUserUseCase,
+		ResetPasswordUserUseCase:        resetPasswordUserUseCase,
 	}
 }
 
@@ -107,7 +117,7 @@ func (h *UserHandlers) GetByIdUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	user, err := h.GetUserByIdUseCase.GetUserById(context.Background(), userID)
+	user, err := h.GetUserByIdUseCase.Execute(context.Background(), userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("Erro ao buscar usuário: %s", err)})
@@ -117,4 +127,86 @@ func (h *UserHandlers) GetByIdUserHandler(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)
+}
+
+func (h *UserHandlers) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	auth := r.Header.Get("Authorization")
+	userID, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
+	if err != nil {
+		log.Println("Erro ao extrair userID:", err)
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Token inválido ou expirado"})
+		return
+	}
+	if userID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "ID de usuário não encontrado"})
+		return
+	}
+
+	if err := h.DeleteUserUseCase.Execute(context.Background(), userID); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("Erro ao deletar usuário: %s", err)})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Usuário deletado com sucesso"})
+}
+
+func (h *UserHandlers) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+	auth := r.Header.Get("Authorization")
+	userID, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
+	if err != nil {
+		http.Error(w, "Token inválido ou expirado", http.StatusUnauthorized)
+		return
+	}
+
+	var updateDTO usecases.UpdateUserInputDTO
+	if err := json.NewDecoder(r.Body).Decode(&updateDTO); err != nil {
+		http.Error(w, "Erro ao decodificar a requisição", http.StatusBadRequest)
+		return
+	}
+
+	updateDTO.ID = userID
+
+	// Executar o caso de uso de atualização
+	if err := h.UpdateUserUseCase.Execute(context.Background(), updateDTO); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Usuário atualizado com sucesso"})
+}
+
+func (h *UserHandlers) RequestPasswordResetUserHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases.RequestPasswordResetUserInputDTO
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := h.RequestPasswordResetUserUseCase.Execute(context.Background(), input.Email); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(fmt.Sprintf("Erro ao solicitar reset de senha: %s", err))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Token de redefinição enviado para o e-mail"})
+}
+
+func (h *UserHandlers) ResetPasswordUserHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases.ResetPasswordUserInputDTO
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := h.ResetPasswordUserUseCase.Execute(context.Background(), input); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(fmt.Sprintf("Erro ao resetar senha: %s", err))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Senha resetada com sucesso"})
 }

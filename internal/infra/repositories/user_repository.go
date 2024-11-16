@@ -68,9 +68,9 @@ func (r *UserRepositoryImpl) GetByEmail(ctx context.Context, email string) (*ent
 }
 
 func (r *UserRepositoryImpl) Update(ctx context.Context, user *entities.User) error {
-	query := `UPDATE users SET name_user=$1, email=$2, password_user=$3, updated_at=$4 WHERE ID=$5`
+	query := `UPDATE users SET name_user=$1, email=$2, password_user=$3 WHERE ID=$5`
 
-	_, err := r.DB.Exec(query, user.Name, user.Email, user.Password, user.UpdatedAt, user.ID)
+	_, err := r.DB.Exec(query, user.Name, user.Email, user.Password, user.ID)
 	if err != nil {
 		return err
 	}

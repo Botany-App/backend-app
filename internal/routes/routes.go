@@ -18,19 +18,37 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 	RegisterUserRoutes := usecases.NewRegisterUserUseCase(repository)
 	LoginUserRoutes := usecases.NewLoginUserUseCase(repository)
 	GetUserRoutes := usecases.NewGetUserByIdUseCase(repository)
-	useHandlers := handlers.NewUserHandlers(RegisterUserRoutes, LoginUserRoutes, GetUserRoutes)
+	DeleteUserRoutes := usecases.NewDeleteUserUseCase(repository)
+	UpdateUserRoutes := usecases.NewUpdateUserUseCase(repository)
+	RequestPasswordResetUserRoutes := usecases.NewRequestPasswordResetUseCase(repository, jwtService)
+	ResetPasswordUserRoutes := usecases.NewResetPasswordUserUseCase(repository, jwtService)
+
+	userHandlers := handlers.NewUserHandlers(
+		RegisterUserRoutes,
+		LoginUserRoutes,
+		GetUserRoutes,
+		DeleteUserRoutes,
+		UpdateUserRoutes,
+		RequestPasswordResetUserRoutes,
+		ResetPasswordUserRoutes,
+	)
 
 	r := chi.NewRouter()
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Post("/register/1", useHandlers.RegisterUserHandler)
-		r.Post("/register/2", useHandlers.ConfirmEmailHandler)
-		r.Post("/register/resendToken", useHandlers.ResendTokenHandler)
-		r.Post("/login", useHandlers.LoginUserHandler)
+		r.Post("/register", userHandlers.RegisterUserHandler)
+		r.Post("/register/confirm", userHandlers.ConfirmEmailHandler)
+		r.Post("/register/resend-token", userHandlers.ResendTokenHandler)
+		r.Post("/login", userHandlers.LoginUserHandler)
+		r.Post("/password-reset/request", userHandlers.RequestPasswordResetUserHandler)
+		r.Post("/password-reset", userHandlers.ResetPasswordUserHandler)
+	})
 
-		r.Group(func(r chi.Router) {
-			r.Use(middleware.AuthMiddleware(jwtService))
-			r.Get("/user", useHandlers.GetByIdUserHandler)
-		})
+	// Rotas protegidas por autenticação
+	r.Route("/api/v1/user", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(jwtService))
+		r.Get("/", userHandlers.GetByIdUserHandler)
+		r.Delete("/", userHandlers.DeleteUserHandler)
+		r.Put("/", userHandlers.UpdateUserHandler)
 	})
 
 	return r, nil
