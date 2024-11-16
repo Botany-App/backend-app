@@ -170,7 +170,7 @@ func (h *UserHandlers) UpdateUserHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	updateDTO.ID = userID
-
+	log.Println("updateDTO:", updateDTO)
 	// Executar o caso de uso de atualização
 	if err := h.UpdateUserUseCase.Execute(context.Background(), updateDTO); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -22,12 +22,14 @@ type User struct {
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	StoreToken(ctx context.Context, email, token string) error
-	ResendToken(ctx context.Context, email string, token string) error
+	ResendToken(ctx context.Context, email string, token string) (string, error)
 	ActivateAccount(ctx context.Context, email, token string) error
 	Login(ctx context.Context, email, password string) (string, error)
 	GetByID(ctx context.Context, id string) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
-	UpdatePassword(ctx context.Context, email, password string) error
+	UpdatePassword(ctx context.Context, ID uuid.UUID, password string) error
+	StoreRevokedTokenPassword(ctx context.Context, token string) error
+	IsTokenRevokedPassword(ctx context.Context, token string) bool
 	Update(ctx context.Context, user *User) error
 	Delete(ctx context.Context, id string) error
 }

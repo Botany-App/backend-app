@@ -30,9 +30,12 @@ func (uc *RequestPasswordResetUserUseCase) Execute(ctx context.Context, email st
 		return errors.New("usuário não encontrado")
 	}
 
-	resetToken, err := uc.JWTService.GenerateToken(user.ID.String())
+	resetToken, err := uc.JWTService.GenerateToken(user.ID)
 	if err != nil {
 		return errors.New("erro ao gerar token de redefinição de senha")
+	}
+	if err != nil {
+		return errors.New("erro ao armazenar token de redefinição de senha")
 	}
 
 	err = services.NewEmailService().SendEmailResetPassword(user.Email, resetToken)

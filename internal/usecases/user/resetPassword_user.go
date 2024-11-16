@@ -4,14 +4,16 @@ import (
 	"context"
 	"errors"
 	"log"
+	"os"
 
 	"github.com/lucasBiazon/botany-back/internal/entities"
 	services "github.com/lucasBiazon/botany-back/internal/service"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type ResetPasswordUserInputDTO struct {
-	newPassword string `json:"newPassword"`
-	token       string `json:"token"`
+	NewPassword string `json:"newPassword"`
+	Token       string `json:"token"`
 }
 
 type ResetPasswordUserUseCase struct {
@@ -27,7 +29,11 @@ func NewResetPasswordUserUseCase(userRepository entities.UserRepository, jwtServ
 }
 
 func (uc *ResetPasswordUserUseCase) Execute(ctx context.Context, input ResetPasswordUserInputDTO) error {
-	userID, err := services.ExtractUserIDFromToken(input.token, uc.JWTService)
+	if uc.UserRepository.IsTokenRevokedPassword(ctx, input.Token) {
+		return errors.New("token inválido ou já utilizado")
+	}
+
+	userID, err := services.ExtractUserIDFromToken(input.Token, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
 		return err
 	}
@@ -38,11 +44,22 @@ func (uc *ResetPasswordUserUseCase) Execute(ctx context.Context, input ResetPass
 		return errors.New("usuário não encontrado")
 	}
 
-	user.Password = input.newPassword
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(input.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.New("erro ao gerar hash de senha")
+	}
+
+	user.Password = string(passwordHash)
+	log.Println(user.ID)
 	log.Println("--> Atualizando senha de usuário")
-	err = uc.UserRepository.UpdatePassword(ctx, user.ID.String(), user.Password)
+	err = uc.UserRepository.UpdatePassword(ctx, user.ID, user.Password)
 	if err != nil {
 		return errors.New("erro ao atualizar senha de usuário")
+	}
+
+	err = uc.UserRepository.StoreRevokedTokenPassword(ctx, input.Token)
+	if err != nil {
+		return err
 	}
 
 	return nil

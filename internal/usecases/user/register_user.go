@@ -74,7 +74,11 @@ func (uc *RegisterUserUseCase) ResendToken(ctx context.Context, email string) er
 		return err
 	}
 	log.Println("---Resend token---")
-	err = uc.userRepository.ResendToken(ctx, email, newToken)
+	token, err := uc.userRepository.ResendToken(ctx, email, newToken)
+	if err != nil {
+		return err
+	}
+	err = services.NewEmailService().SendEmail(email, token)
 	if err != nil {
 		return err
 	}

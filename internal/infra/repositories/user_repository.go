@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/lucasBiazon/botany-back/internal/entities"
@@ -68,22 +69,18 @@ func (r *UserRepositoryImpl) GetByEmail(ctx context.Context, email string) (*ent
 }
 
 func (r *UserRepositoryImpl) Update(ctx context.Context, user *entities.User) error {
-	query := `UPDATE users SET name_user=$1, email=$2, password_user=$3 WHERE ID=$5`
+	query := `UPDATE users SET name_user=$1, email=$2  WHERE ID=$3`
 
-	_, err := r.DB.Exec(query, user.Name, user.Email, user.Password, user.ID)
+	_, err := r.DB.Exec(query, user.Name, user.Email, user.ID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, email, password string) error {
-	query := `UPDATE users SET password_hash=$1 WHERE email=$2`
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	_, err = r.DB.Exec(query, string(passwordHash), email)
+func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, ID uuid.UUID, password string) error {
+	query := `UPDATE users SET password_hash=$1 WHERE ID=$2`
+	_, err := r.DB.Exec(query, password, ID)
 	if err != nil {
 		return err
 	}
@@ -99,6 +96,22 @@ func (r *UserRepositoryImpl) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+func (r *UserRepositoryImpl) StoreRevokedTokenPassword(ctx context.Context, token string) error {
+	err := r.RD.Set(ctx, token, "revoked", time.Minute*10).Err()
+	if err != nil {
+		return errors.New("failed to store revoked token")
+	}
+	return nil
+}
+
+func (r *UserRepositoryImpl) IsTokenRevokedPassword(ctx context.Context, token string) bool {
+	val, err := r.RD.Get(ctx, token).Result()
+	if err == redis.Nil {
+		return false
+	}
+	return err == nil && val == "revoked"
+}
+
 func (r *UserRepositoryImpl) StoreToken(ctx context.Context, email, token string) error {
 
 	err := r.RD.HSet(ctx, email, "token", token).Err()
@@ -112,31 +125,32 @@ func (r *UserRepositoryImpl) StoreToken(ctx context.Context, email, token string
 	return nil
 }
 
-func (r *UserRepositoryImpl) ResendToken(ctx context.Context, email string, token string) error {
+func (r *UserRepositoryImpl) ResendToken(ctx context.Context, email string, token string) (string, error) {
 	tokenStored, err := r.RD.HGet(ctx, email, "token").Result()
+
 	if err == redis.Nil || tokenStored == "" {
 		err = r.RD.HSet(ctx, email, "token", token).Err()
 		if err != nil {
-			return err
+			return "", err
 		}
 		err = r.RD.Expire(ctx, email, 10*time.Minute).Err()
 		if err != nil {
-			return err
+			return "", err
 		}
-		return nil
+		return token, nil
 	}
 	if err = r.RD.Del(ctx, email).Err(); err != nil {
-		return err
+		return "", err
 	}
 	err = r.RD.HSet(ctx, email, "token", token).Err()
 	if err != nil {
-		return err
+		return "", err
 	}
 	err = r.RD.Expire(ctx, email, 10*time.Minute).Err()
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return tokenStored, nil
 }
 
 func (r *UserRepositoryImpl) ActivateAccount(ctx context.Context, email, token string) error {

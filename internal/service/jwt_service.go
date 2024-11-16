@@ -9,7 +9,7 @@ import (
 )
 
 type JWTService interface {
-	GenerateToken(userID string) (string, error)
+	GenerateToken(userID interface{}) (string, error)
 	ValidateToken(tokenString string) (*jwt.Token, error)
 }
 
@@ -23,7 +23,7 @@ func NewJWTService(secretKey string) *JWTServiceImpl {
 	}
 }
 
-func (j *JWTServiceImpl) GenerateToken(userID string) (string, error) {
+func (j *JWTServiceImpl) GenerateToken(userID interface{}) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"exp":     time.Now().Add(time.Hour * 72).Unix(),
