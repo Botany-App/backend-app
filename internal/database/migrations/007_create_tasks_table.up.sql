@@ -7,9 +7,14 @@ CREATE TABLE tasks (
     date_task TIMESTAMP NOT NULL,
     task_status task_status_enum NOT NULL DEFAULT 'pending',
     user_id UUID NOT NULL,
-    plant_id UUID,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_user_task FOREIGN KEY (user_id) REFERENCES users(ID) ON DELETE CASCADE,
+);
+
+CREATE TABLE task_plants (
+    task_id UUID NOT NULL,
+    plant_id UUID NOT NULL,
+    CONSTRAINT fk_task_plant FOREIGN KEY (task_id) REFERENCES tasks(ID) ON DELETE CASCADE,
     CONSTRAINT fk_plant_task FOREIGN KEY (plant_id) REFERENCES plants(ID) ON DELETE CASCADE
 );
