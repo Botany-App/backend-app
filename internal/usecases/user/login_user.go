@@ -9,13 +9,13 @@ import (
 	services "github.com/lucasBiazon/botany-back/internal/service"
 )
 
-type LoginUserUseCase struct {
-	UserRepository entities.UserRepository
-}
-
 type LoginUserInputDTO struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
+}
+
+type LoginUserUseCase struct {
+	UserRepository entities.UserRepository
 }
 
 func NewLoginUserUseCase(userRepo entities.UserRepository) *LoginUserUseCase {
@@ -24,23 +24,24 @@ func NewLoginUserUseCase(userRepo entities.UserRepository) *LoginUserUseCase {
 	}
 }
 
-func (uc *LoginUserUseCase) Execute(ctx context.Context, email, password string) (string, error) {
-	log.Println("--lOGANDO---")
-	id, err := uc.UserRepository.Login(ctx, email, password)
+func (uc *LoginUserUseCase) Execute(ctx context.Context, input LoginUserInputDTO) (string, error) {
+	log.Println("--> lOGANDO USUÁRIO")
+	ID, err := uc.UserRepository.Login(ctx, input.Email, input.Password)
 	if err != nil {
-		if id == "not found" {
-			return "user not found", err
+		if ID == "not found" {
+			log.Println("User not found")
 		}
-		if id == "invalid password" {
-			return "invalid password", err
+		if ID == "invalid password" {
+			log.Println("Invalid password")
 		}
 		return "", err
 	}
 
 	secretKey := os.Getenv("JWT_SECRET_KEY")
-	tokenJWT, err := services.NewJWTService(secretKey).GenerateToken(id)
+	tokenJWT, err := services.NewJWTService(secretKey).GenerateToken(ID)
 	if err != nil {
 		return "", err
 	}
+	log.Println("<- Token gerado com sucesso")
 	return tokenJWT, nil
 }

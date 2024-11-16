@@ -29,10 +29,12 @@ func NewResetPasswordUserUseCase(userRepository entities.UserRepository, jwtServ
 }
 
 func (uc *ResetPasswordUserUseCase) Execute(ctx context.Context, input ResetPasswordUserInputDTO) error {
+	log.Println("--> Verificando token de senha")
 	if uc.UserRepository.IsTokenRevokedPassword(ctx, input.Token) {
 		return errors.New("token inválido ou já utilizado")
 	}
 
+	log.Println("--> Extraindo ID de usuário do token")
 	userID, err := services.ExtractUserIDFromToken(input.Token, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
 		return err
@@ -50,17 +52,19 @@ func (uc *ResetPasswordUserUseCase) Execute(ctx context.Context, input ResetPass
 	}
 
 	user.Password = string(passwordHash)
-	log.Println(user.ID)
+
 	log.Println("--> Atualizando senha de usuário")
 	err = uc.UserRepository.UpdatePassword(ctx, user.ID, user.Password)
 	if err != nil {
 		return errors.New("erro ao atualizar senha de usuário")
 	}
 
+	log.Println("--> Revogando token de senha")
 	err = uc.UserRepository.StoreRevokedTokenPassword(ctx, input.Token)
 	if err != nil {
 		return err
 	}
 
+	log.Println("<- Senha atualizada com sucesso")
 	return nil
 }

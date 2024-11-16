@@ -36,10 +36,10 @@ func (r *UserRepositoryImpl) Create(ctx context.Context, user *entities.User) er
 	return nil
 }
 
-func (r *UserRepositoryImpl) GetByID(ctx context.Context, id string) (*entities.User, error) {
+func (r *UserRepositoryImpl) GetByID(ctx context.Context, ID string) (*entities.User, error) {
 	query := `SELECT ID, name_user, email, password_hash, created_at, updated_at FROM users WHERE id=$1`
 
-	row := r.DB.QueryRow(query, id)
+	row := r.DB.QueryRow(query, ID)
 	user := &entities.User{}
 	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
 
@@ -87,9 +87,9 @@ func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, ID uuid.UUID, p
 	return nil
 }
 
-func (r *UserRepositoryImpl) Delete(ctx context.Context, id string) error {
+func (r *UserRepositoryImpl) Delete(ctx context.Context, ID string) error {
 	query := `DELETE FROM users WHERE ID=$1`
-	_, err := r.DB.Exec(query, id)
+	_, err := r.DB.Exec(query, ID)
 	if err != nil {
 		return err
 	}
