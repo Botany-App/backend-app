@@ -163,21 +163,26 @@ func (r *UserRepositoryImpl) ActivateAccount(ctx context.Context, email, token s
 		return err
 	}
 
-	query := `UPDATE users SET isActive=true WHERE email=$1`
+	query := `UPDATE users SET isActive=TRUE WHERE email=$1`
 	_, err = r.DB.Exec(query, email)
 	return err
 }
 
 func (r *UserRepositoryImpl) Login(ctx context.Context, email, password string) (string, error) {
-	query := `SELECT ID, password_hash FROM users WHERE email=$1`
+	query := `SELECT ID, password_hash, isActive FROM users WHERE email=$1`
 	row := r.DB.QueryRow(query, email)
 	var passwordHash, ID string
-	err := row.Scan(&ID, &passwordHash)
+	var isActive bool
+	err := row.Scan(&ID, &passwordHash, &isActive)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "not found", errors.New("user not found")
 		}
 		return "", err
+	}
+
+	if !isActive {
+		return "not active", errors.New("user not active")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))

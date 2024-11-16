@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/lucasBiazon/botany-back/internal/entities"
@@ -35,6 +36,17 @@ func (uc *RegisterUserUseCase) StartRegistration(ctx context.Context, input Regi
 	if err != nil {
 		return err
 	}
+
+	userExists, err := uc.userRepository.GetByEmail(ctx, user.Email)
+	if err != nil {
+		log.Print(err)
+		return errors.New("erro ao buscar usuário")
+	}
+	if userExists != nil {
+
+		return errors.New("email já cadastrado")
+	}
+
 	log.Println("--> Criando user")
 	if err := uc.userRepository.Create(ctx, user); err != nil {
 		return err
