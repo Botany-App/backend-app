@@ -99,6 +99,7 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 	})
 
 	r.Route("/api/v1/user/tasks", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(jwtService))
 		r.Post("/", taskHandlers.CreateTaskHandler)
 		r.Get("/", taskHandlers.FindAllTaskHandler)
 		r.Get("/status", taskHandlers.FindAllByStatusTaskHandler)
@@ -113,6 +114,7 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 	})
 
 	r.Route("/api/v1/user/tasks/categories", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(jwtService))
 		r.Post("/", categoryTaskHandlers.CreateCategoryTaskHandler)
 		r.Get("/", categoryTaskHandlers.GetAllCategoryTaskHandler)
 		r.Get("/{id}", categoryTaskHandlers.GetByIdCategoryTaskHandler)

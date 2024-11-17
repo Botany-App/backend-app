@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS categories_and_tasks;
+DROP TABLE IF EXISTS categories_tasks_and_tasks;

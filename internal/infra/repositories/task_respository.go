@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -309,5 +310,6 @@ func GetFromCache[T any](rd *redis.Client, key string, fetch func() (T, error)) 
 
 	// Desserializa o resultado do cache
 	json.Unmarshal([]byte(cachedData), &result)
+	log.Print(result)
 	return result, nil
 }

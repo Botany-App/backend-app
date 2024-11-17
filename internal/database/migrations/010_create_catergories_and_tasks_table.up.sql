@@ -1,4 +1,4 @@
-CREATE TABLE categories_and_tasks (
+CREATE TABLE categories_tasks_and_tasks (
     ID UUID PRIMARY KEY,
     task_id UUID NOT NULL,
     category_id UUID NOT NULL,

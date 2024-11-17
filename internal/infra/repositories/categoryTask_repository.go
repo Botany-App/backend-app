@@ -3,8 +3,10 @@ package repositories
 import (
 	"database/sql"
 	"fmt"
+	"log"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"github.com/lucasBiazon/botany-back/internal/entities"
 	"github.com/pkg/errors"
 )
@@ -22,32 +24,36 @@ func NewCategoryTaskRepository(db *sql.DB, rd *redis.Client) *CategoryTaskReposi
 }
 
 func (r *CategoryTaskRepositoryImpl) GetAll(userID string) ([]entities.CategoryTask, error) {
+	log.Print(userID)
 	key := fmt.Sprintf("category_tasks:user:%s:all", userID)
 	fetch := func() ([]entities.CategoryTask, error) {
 		var categoryTasks []entities.CategoryTask
 		query := `SELECT category_id FROM categories_tasks_users WHERE user_id = $1`
 		var categoryIDs []string
 		rows, err := r.DB.Query(query, userID)
+		log.Print(rows)
 		if err != nil {
-			return nil, errors.New("error fetching data")
+			return nil, errors.New("error fetching data1")
 		}
 		for rows.Next() {
 			var categoryID string
 			err := rows.Scan(&categoryID)
 			if err != nil {
-				return nil, errors.New("error fetching data")
+				return nil, errors.New("error fetching data2")
 			}
 			categoryIDs = append(categoryIDs, categoryID)
 		}
+		log.Print(categoryIDs)
 		query = `SELECT * FROM categories_tasks WHERE id = $1`
 		for _, categoryID := range categoryIDs {
 			var categoryTask entities.CategoryTask
 			err := r.DB.QueryRow(query, categoryID).Scan(&categoryTask.ID, &categoryTask.Name, &categoryTask.Description, &categoryTask.CreatedAt, &categoryTask.UpdatedAt)
 			if err != nil {
-				return nil, errors.New("error fetching data")
+				return nil, errors.New("error fetching data3")
 			}
 			categoryTasks = append(categoryTasks, categoryTask)
 		}
+		log.Println(categoryTasks)
 		return categoryTasks, nil
 	}
 	return GetFromCache(r.RD, key, fetch)
@@ -121,16 +127,17 @@ func (r *CategoryTaskRepositoryImpl) GetByID(userID, id string) ([]entities.Cate
 }
 
 func (r *CategoryTaskRepositoryImpl) Create(userID string, category *entities.CategoryTask) error {
-	query := `INSERT INTO categories_tasks (id, name, description, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)`
-	_, err := r.DB.Exec(query, category.ID, category.Name, category.Description, category.CreatedAt, category.UpdatedAt)
+	query := `INSERT INTO categories_tasks (ID, name_category , description_category) VALUES ($1, $2, $3)`
+	_, err := r.DB.Exec(query, category.ID, category.Name, category.Description)
 	if err != nil {
-		return errors.New("error creating category task")
+
+		return errors.New("primeira error creating category task")
 	}
 
-	query = `INSERT INTO categories_tasks_users (category_id, user_id) VALUES ($1, $2)`
-	_, err = r.DB.Exec(query, category.ID, userID)
+	query = `INSERT INTO categories_tasks_users (ID, category_id, user_id) VALUES ($1, $2, $3)`
+	_, err = r.DB.Exec(query, uuid.New(), category.ID, userID)
 	if err != nil {
-		return errors.New("error creating category task")
+		return errors.New("segunda error creating category task")
 	}
 
 	return nil

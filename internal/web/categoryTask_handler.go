@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 
@@ -44,14 +45,18 @@ func (h *CategoryTaskHandler) CreateCategoryTaskHandler(w http.ResponseWriter, r
 		return
 	}
 
+	log.Println(userID)
 	var categoryTask usecases_categorytask.CreateCategoryTaskDTO
 	if err := json.NewDecoder(r.Body).Decode(&categoryTask); err != nil {
+		log.Println(err)
 		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
 	categoryTask.UserID = userID
+	log.Println(categoryTask)
 	if err := h.CreateCategoryTaskUseCase.Execute(categoryTask); err != nil {
+		log.Print(err)
 		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
@@ -158,6 +163,7 @@ func (h *CategoryTaskHandler) GetByIdCategoryTaskHandler(w http.ResponseWriter, 
 }
 
 func (h *CategoryTaskHandler) GetAllCategoryTaskHandler(w http.ResponseWriter, r *http.Request) {
+	log.Print("KKKKKKKKKKKKKKKKKKK")
 	auth := r.Header.Get("Authorization")
 	userID, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
@@ -167,12 +173,12 @@ func (h *CategoryTaskHandler) GetAllCategoryTaskHandler(w http.ResponseWriter, r
 
 	var categoryTask usecases_categorytask.GetAllCategoryTaskDTO
 	categoryTask.UserID = userID
-
+	log.Println(categoryTask, "KKKKKKKKKKKKKKKKKKK")
 	categoryTasks, err := h.GetAllCategoryTaskUseCase.Execute(&categoryTask)
 	if err != nil {
 		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
-
+	log.Println(categoryTasks)
 	jsonResponse(w, http.StatusOK, "success", "Categorias de tarefas encontradas", categoryTasks)
 }
