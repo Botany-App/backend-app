@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"github.com/lucasBiazon/botany-back/internal/entities"
 )
 
@@ -28,6 +29,24 @@ func (r *TaskRepositoryImpl) Create(task *entities.Task) error {
           VALUES ($1, $2, $3, $4, $5, $6)`
 	_, err := r.DB.Exec(query, task.ID, task.Name, task.Description, task.TaskDate, task.UserID, task.TaskStatus)
 
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *TaskRepositoryImpl) AddCategory(taskID string, categoryID string) error {
+	query := `INSERT INTO categories_and_tasks (ID, task_id, category_id) VALUES ($1, $2, $3)`
+	_, err := r.DB.Exec(query, uuid.New(), taskID, categoryID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *TaskRepositoryImpl) AddGardenPlanta(taskID string, gardenPlantaID string) error {
+	query := `INSERT INTO task_plants_garden (ID, task_id, plant_garden_id) VALUES ($1, $2, $3)`
+	_, err := r.DB.Exec(query, uuid.New(), taskID, gardenPlantaID)
 	if err != nil {
 		return err
 	}
@@ -55,7 +74,7 @@ func (r *TaskRepositoryImpl) FindAll(userID string) ([]entities.Task, error) {
 		return tasks, nil
 	}
 
-	return getFromCache(r.RD, key, fetch)
+	return GetFromCache(r.RD, key, fetch)
 }
 
 func (r *TaskRepositoryImpl) FindByID(userID, id string) (*entities.Task, error) {
@@ -70,7 +89,7 @@ func (r *TaskRepositoryImpl) FindByID(userID, id string) (*entities.Task, error)
 		return &task, nil
 	}
 
-	return getFromCache(r.RD, key, fetch)
+	return GetFromCache(r.RD, key, fetch)
 }
 
 func (r *TaskRepositoryImpl) FindAllByName(userID, name string) ([]entities.Task, error) {
@@ -94,10 +113,10 @@ func (r *TaskRepositoryImpl) FindAllByName(userID, name string) ([]entities.Task
 		return tasks, nil
 	}
 
-	return getFromCache(r.RD, key, fetch)
+	return GetFromCache(r.RD, key, fetch)
 }
 
-func (r *TaskRepositoryImpl) FindAllByDate(userID string, date string) ([]entities.Task, error) {
+func (r *TaskRepositoryImpl) FindAllByDate(userID string, date time.Time) ([]entities.Task, error) {
 	key := fmt.Sprintf("tasks:user:%s:date:%s", userID, date)
 	fetch := func() ([]entities.Task, error) {
 		var tasks []entities.Task
@@ -118,10 +137,10 @@ func (r *TaskRepositoryImpl) FindAllByDate(userID string, date string) ([]entiti
 		return tasks, nil
 	}
 
-	return getFromCache(r.RD, key, fetch)
+	return GetFromCache(r.RD, key, fetch)
 }
 
-func (r *TaskRepositoryImpl) FindAllByStatus(userID, status string) ([]entities.Task, error) {
+func (r *TaskRepositoryImpl) FindAllByStatus(userID string, status entities.TaskStatusEnum) ([]entities.Task, error) {
 	key := fmt.Sprintf("tasks:user:%s:status:%s", userID, status)
 	fetch := func() ([]entities.Task, error) {
 		var tasks []entities.Task
@@ -142,7 +161,7 @@ func (r *TaskRepositoryImpl) FindAllByStatus(userID, status string) ([]entities.
 		return tasks, nil
 	}
 
-	return getFromCache(r.RD, key, fetch)
+	return GetFromCache(r.RD, key, fetch)
 }
 
 func (r *TaskRepositoryImpl) FindTasksNearDeadline(userID string, days int) ([]entities.Task, error) {
@@ -166,7 +185,33 @@ func (r *TaskRepositoryImpl) FindTasksNearDeadline(userID string, days int) ([]e
 		return tasks, nil
 	}
 
-	return getFromCache(r.RD, key, fetch)
+	return GetFromCache(r.RD, key, fetch)
+}
+
+func (r *TaskRepositoryImpl) FindAllByCategory(userID, categoryID string) ([]entities.Task, error) {
+	key := fmt.Sprintf("tasks:user:%s:category:%s", userID, categoryID)
+	fetch := func() ([]entities.Task, error) {
+		var tasks []entities.Task
+		query := `SELECT * FROM tasks t
+		INNER JOIN categories_and_tasks ct ON t.ID = ct.task_id
+		WHERE ct.category_id = $1 AND t.user_id = $2`
+		rows, err := r.DB.Query(query, categoryID, userID)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var task entities.Task
+			err := rows.Scan(&task.ID, &task.Name, &task.Description, &task.TaskDate, &task.UserID, &task.TaskStatus)
+			if err != nil {
+				return nil, err
+			}
+			tasks = append(tasks, task)
+		}
+		return tasks, nil
+	}
+
+	return GetFromCache(r.RD, key, fetch)
 }
 
 func (r *TaskRepositoryImpl) FindTasksFarFromDeadline(userID string, days int) ([]entities.Task, error) {
@@ -190,10 +235,11 @@ func (r *TaskRepositoryImpl) FindTasksFarFromDeadline(userID string, days int) (
 		return tasks, nil
 	}
 
-	return getFromCache(r.RD, key, fetch)
+	return GetFromCache(r.RD, key, fetch)
 }
 
 func (r *TaskRepositoryImpl) Update(task *entities.Task) error {
+
 	query := `UPDATE tasks SET name_task = $1, description_task = $2, task_date = $3, task_status = $4 WHERE ID = $5`
 	_, err := r.DB.Exec(query, task.Name, task.Description, task.TaskDate, task.TaskStatus, task.ID)
 	if err != nil {
@@ -202,9 +248,27 @@ func (r *TaskRepositoryImpl) Update(task *entities.Task) error {
 	return nil
 }
 
-func (r *TaskRepositoryImpl) Delete(id string) error {
-	query := `DELETE FROM tasks WHERE ID = $1`
-	_, err := r.DB.Exec(query, id)
+func (r *TaskRepositoryImpl) UpdateTaskCategory(taskID, categoryID string) error {
+	query := `UPDATE categories_and_tasks SET category_id = $1 WHERE task_id = $2`
+	_, err := r.DB.Exec(query, categoryID, taskID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *TaskRepositoryImpl) UpdateTaskGardenPlanta(taskID, gardenPlantaID string) error {
+	query := `UPDATE task_plants_garden SET plant_garden_id = $1 WHERE task_id = $2`
+	_, err := r.DB.Exec(query, gardenPlantaID, taskID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *TaskRepositoryImpl) Delete(userID string, id string) error {
+	query := `DELETE FROM tasks WHERE ID = $1 and user_id = $2`
+	_, err := r.DB.Exec(query, id, userID)
 	if err != nil {
 		return err
 	}
@@ -214,7 +278,7 @@ func (r *TaskRepositoryImpl) Delete(id string) error {
 const cacheDuration = 6 * time.Hour
 
 // Função auxiliar para buscar no cache ou no PostgreSQL
-func getFromCache[T any](rd *redis.Client, key string, fetch func() (T, error)) (T, error) {
+func GetFromCache[T any](rd *redis.Client, key string, fetch func() (T, error)) (T, error) {
 	var result T
 	ctx := context.Background()
 

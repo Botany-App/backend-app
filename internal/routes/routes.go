@@ -7,8 +7,11 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/lucasBiazon/botany-back/internal/infra/repositories"
 	"github.com/lucasBiazon/botany-back/internal/middleware"
-	services "github.com/lucasBiazon/botany-back/internal/service"
+	usecases_categorytask "github.com/lucasBiazon/botany-back/internal/usecases/category_task"
+	usecasesTasks "github.com/lucasBiazon/botany-back/internal/usecases/tasks"
 	usecases "github.com/lucasBiazon/botany-back/internal/usecases/user"
+
+	services "github.com/lucasBiazon/botany-back/internal/service"
 	handlers "github.com/lucasBiazon/botany-back/internal/web"
 )
 
@@ -33,6 +36,50 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		ResetPasswordUserRoutes,
 	)
 
+	repositoryTask := repositories.NewTaskRepository(db, clientRedis)
+	CreateTaskRoutes := usecasesTasks.NewCreateTaskUseCase(repositoryTask)
+	FindAllTasksRoutes := usecasesTasks.NewFindAllTaskUseCase(repositoryTask)
+	FindAllByStatusTaskRoutes := usecasesTasks.NewFindAllByStatusTaskUseCase(repositoryTask)
+	FindAllByCategoryTaskRoutes := usecasesTasks.NewFindAllByCategoryTaskUseCase(repositoryTask)
+	FindAllByDateTaskRoutes := usecasesTasks.NewFindAllByDateTaskUseCase(repositoryTask)
+	FindAllByNameTaskRoutes := usecasesTasks.NewFindAllByNameTaskUseCase(repositoryTask)
+	FindTasksNearDeadlineTaskRoutes := usecasesTasks.NewFindTaskNearDeadLineTaskUseCase(repositoryTask)
+	FindTasksFarFromDeadlineTaskRoutes := usecasesTasks.NewFindTasksFarFromDeadlineUseCase(repositoryTask)
+	FindTaskByIdTaskRoutes := usecasesTasks.NewFindByIDTaskUseCase(repositoryTask)
+	UpdateTaskRoutes := usecasesTasks.NewUpdateTaskUseCase(repositoryTask)
+	DeleteTaskRoutes := usecasesTasks.NewDeleteTaskUseCase(repositoryTask)
+
+	taskHandlers := handlers.NewTaskHandlers(
+		CreateTaskRoutes,
+		DeleteTaskRoutes,
+		FindAllByCategoryTaskRoutes,
+		FindAllByDateTaskRoutes,
+		FindAllByNameTaskRoutes,
+		FindAllByStatusTaskRoutes,
+		FindAllTasksRoutes,
+		FindTaskByIdTaskRoutes,
+		UpdateTaskRoutes,
+		FindTasksNearDeadlineTaskRoutes,
+		FindTasksFarFromDeadlineTaskRoutes,
+	)
+
+	repositoryCategoriesTask := repositories.NewCategoryTaskRepository(db, clientRedis)
+	CreateCategoryTaskRoutes := usecases_categorytask.NewCreateCategoryTaskUseCase(repositoryCategoriesTask)
+	GetAllCategoryTaskRoutes := usecases_categorytask.NewGetAllCategoryTaskUseCase(repositoryCategoriesTask)
+	GetCategoryTaskByIdRoutes := usecases_categorytask.NewGetByIdCategoryTaskUseCase(repositoryCategoriesTask)
+	GetByNameCategoryTaskRoutes := usecases_categorytask.NewGetByNameCategoryTaskUseCase(repositoryCategoriesTask)
+	UpdateCategoryTaskRoutes := usecases_categorytask.NewUpdateCategoryTaskUseCase(repositoryCategoriesTask)
+	DeleteCategoryTaskRoutes := usecases_categorytask.NewDeleteCategoryTaskUseCase(repositoryCategoriesTask)
+
+	categoryTaskHandlers := handlers.NewCategoryTaskHandler(
+		CreateCategoryTaskRoutes,
+		DeleteCategoryTaskRoutes,
+		GetByNameCategoryTaskRoutes,
+		UpdateCategoryTaskRoutes,
+		GetCategoryTaskByIdRoutes,
+		GetAllCategoryTaskRoutes,
+	)
+
 	r := chi.NewRouter()
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/register", userHandlers.RegisterUserHandler)
@@ -51,5 +98,27 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Put("/", userHandlers.UpdateUserHandler)
 	})
 
+	r.Route("/api/v1/user/tasks", func(r chi.Router) {
+		r.Post("/", taskHandlers.CreateTaskHandler)
+		r.Get("/", taskHandlers.FindAllTaskHandler)
+		r.Get("/status", taskHandlers.FindAllByStatusTaskHandler)
+		r.Get("/category", taskHandlers.FindAllByCategoryTaskHandler)
+		r.Get("/date", taskHandlers.FindAllByDateTaskHandler)
+		r.Get("/name", taskHandlers.FindAllByNameTaskHandler)
+		r.Get("/deadline/near", taskHandlers.FindTaskNearDeadLineTaskHandler)
+		r.Get("/deadline/far", taskHandlers.FindTasksFarFromDeadlineHandler)
+		r.Get("/{id}", taskHandlers.FindByIDTaskHandler)
+		r.Put("/{id}", taskHandlers.UpdateTaskHandler)
+		r.Delete("/{id}", taskHandlers.DeleteTaskHandler)
+	})
+
+	r.Route("/api/v1/user/tasks/categories", func(r chi.Router) {
+		r.Post("/", categoryTaskHandlers.CreateCategoryTaskHandler)
+		r.Get("/", categoryTaskHandlers.GetAllCategoryTaskHandler)
+		r.Get("/{id}", categoryTaskHandlers.GetByIdCategoryTaskHandler)
+		r.Get("/name", categoryTaskHandlers.GetByNameCategoryTaskHandler)
+		r.Put("/{id}", categoryTaskHandlers.UpdateCategoryTaskHandler)
+		r.Delete("/{id}", categoryTaskHandlers.DeleteCategoryTaskHandler)
+	})
 	return r, nil
 }

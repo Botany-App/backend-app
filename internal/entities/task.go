@@ -20,9 +20,9 @@ type Task struct {
 	Name           string         `json:"name"`
 	Description    string         `json:"description"`
 	TaskDate       time.Time      `json:"task_date"`
-	UserID         uuid.UUID      `json:"user_id"`
-	GardenPlantaId []uuid.UUID    `json:"garden_planta_id"`
-	CategoriesId   []uuid.UUID    `json:"categories_id"`
+	UserID         string         `json:"user_id"`
+	GardenPlantaId []string       `json:"garden_planta_id"`
+	CategoriesId   []string       `json:"categories_id"`
 	TaskStatus     TaskStatusEnum `json:"task_status"`
 	CreatedAt      time.Time      `json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`
@@ -30,18 +30,23 @@ type Task struct {
 
 type TaskRepository interface {
 	Create(task *Task) error
-	FindAll(userID uuid.UUID) ([]Task, error)
-	FindByID(userID, id uuid.UUID) (*Task, error)
-	FindAllByName(userID uuid.UUID, name string) ([]Task, error)
-	FindAllByDate(userID uuid.UUID, date time.Time) ([]Task, error)
-	FindAllByStatus(userID uuid.UUID, status TaskStatusEnum) ([]Task, error)
-	FindTasksNearDeadline(userID uuid.UUID, days int) ([]Task, error)
-	FindTasksFarFromDeadline(userID uuid.UUID, days int) ([]Task, error)
+	AddCategory(taskID, categoryID string) error
+	AddGardenPlanta(taskID, gardenPlantaID string) error
+	FindAll(userID string) ([]Task, error)
+	FindByID(userID, id string) (*Task, error)
+	FindAllByName(userID string, name string) ([]Task, error)
+	FindAllByDate(userID string, date time.Time) ([]Task, error)
+	FindAllByStatus(userID string, status TaskStatusEnum) ([]Task, error)
+	FindTasksNearDeadline(userID string, days int) ([]Task, error)
+	FindTasksFarFromDeadline(userID string, days int) ([]Task, error)
+	FindAllByCategory(userID string, categoryID string) ([]Task, error)
 	Update(task *Task) error
-	Delete(id uuid.UUID) error
+	UpdateTaskCategory(taskID, categoryID string) error
+	UpdateTaskGardenPlanta(taskID, gardenPlantaID string) error
+	Delete(userID string, id string) error
 }
 
-func NewTask(name, description string, taskDate time.Time, userID uuid.UUID, gardenPlantaId, categoriesId []uuid.UUID, taskStatus TaskStatusEnum) (*Task, error) {
+func NewTask(name, description string, taskDate time.Time, userID string, gardenPlantaId, categoriesId []string, taskStatus TaskStatusEnum) (*Task, error) {
 	if taskStatus == "" {
 		taskStatus = Pending
 	}
@@ -67,7 +72,7 @@ func NewTask(name, description string, taskDate time.Time, userID uuid.UUID, gar
 	if len(description) > 100 {
 		return nil, errors.New("task description exceeds 100 characters")
 	}
-	if userID == uuid.Nil {
+	if userID == "" {
 		return nil, errors.New("user ID is required")
 	}
 	if taskDate.Before(time.Now()) {

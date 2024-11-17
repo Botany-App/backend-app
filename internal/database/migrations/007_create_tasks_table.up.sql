@@ -12,9 +12,10 @@ CREATE TABLE tasks (
     CONSTRAINT fk_user_task FOREIGN KEY (user_id) REFERENCES users(ID) ON DELETE CASCADE,
 );
 
-CREATE TABLE task_plants (
+CREATE TABLE task_plants_garden (
+    ID UUID PRIMARY KEY,
     task_id UUID NOT NULL,
-    plant_id UUID NOT NULL,
+    plant_garden_id UUID NOT NULL,
     CONSTRAINT fk_task_plant FOREIGN KEY (task_id) REFERENCES tasks(ID) ON DELETE CASCADE,
     CONSTRAINT fk_plant_task FOREIGN KEY (plant_id) REFERENCES plants(ID) ON DELETE CASCADE
 );

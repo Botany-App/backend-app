@@ -1,4 +1,5 @@
 CREATE TABLE categories_tasks_users(
+    ID UUID PRIMARY KEY,
     user_id UUID NOT NULL,
     category_id UUID NOT NULL,
     CONSTRAINT fk_user_category FOREIGN KEY (user_id) REFERENCES users(ID) ON DELETE CASCADE,
