@@ -1,6 +1,12 @@
 package usecases_categorytask
 
-import "github.com/lucasBiazon/botany-back/internal/entities"
+import (
+	"context"
+	"errors"
+	"log"
+
+	"github.com/lucasBiazon/botany-back/internal/entities"
+)
 
 type GetByIdCategoryTaskUseCase struct {
 	CategoryTaskRepository entities.CategoryTaskRepository
@@ -16,11 +22,13 @@ func NewGetByIdCategoryTaskUseCase(categoryTaskRepository entities.CategoryTaskR
 		CategoryTaskRepository: categoryTaskRepository,
 	}
 }
-func (uc *GetByIdCategoryTaskUseCase) Execute(dto *GetByIdCategoryTaskDTO) (*entities.CategoryTask, error) {
-	categoriesTask, err := uc.CategoryTaskRepository.GetByID(dto.ID, dto.UserID)
+func (uc *GetByIdCategoryTaskUseCase) Execute(ctx context.Context, input *GetByIdCategoryTaskDTO) (*entities.CategoryTask, error) {
+	log.Println("-> GetByIdCategoryTaskUseCase - Execute")
+	categoryTask, err := uc.CategoryTaskRepository.GetByID(ctx, input.UserID, input.ID)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("categoryTask not found")
 	}
-	categoryTask := categoriesTask[0]
-	return &categoryTask, nil
+
+	log.Println("<- GetByIdCategoryTaskUseCase - Execute")
+	return categoryTask, nil
 }

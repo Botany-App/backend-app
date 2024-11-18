@@ -1,6 +1,8 @@
 package usecases_categorytask
 
 import (
+	"context"
+	"errors"
 	"log"
 
 	"github.com/lucasBiazon/botany-back/internal/entities"
@@ -20,13 +22,13 @@ func NewGetAllCategoryTaskUseCase(categoryTaskRepository entities.CategoryTaskRe
 	}
 }
 
-func (uc *GetAllCategoryTaskUseCase) Execute(dto *GetAllCategoryTaskDTO) ([]entities.CategoryTask, error) {
-	log.Print(dto.UserID)
-	categories, err := uc.CategoryTaskRepository.GetAll(dto.UserID)
+func (uc *GetAllCategoryTaskUseCase) Execute(ctx context.Context, input *GetAllCategoryTaskDTO) ([]entities.CategoryTask, error) {
+	log.Print("--> Get All Category Task Use Case")
+	categories, err := uc.CategoryTaskRepository.GetAll(ctx, input.UserID)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("error on get all category task")
 	}
 
-	log.Print(categories)
+	log.Print("<-- Get All Category Task Use Case")
 	return categories, nil
 }

@@ -1,12 +1,16 @@
 package usecases_categorytask
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"log"
 
 	"github.com/lucasBiazon/botany-back/internal/entities"
 )
 
 type UpdateCategoryTaskDTO struct {
+	ID          string `json:"id"`
 	UserID      string `json:"user_id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -20,28 +24,32 @@ func NewUpdateCategoryTaskUseCase(repository entities.CategoryTaskRepository) *U
 	return &UpdateCategoryTaskUseCase{CategoryTaskRepository: repository}
 }
 
-func (uc UpdateCategoryTaskUseCase) Execute(dto UpdateCategoryTaskDTO) error {
-	categories, err := uc.CategoryTaskRepository.GetByID(dto.UserID, dto.Name)
+func (uc UpdateCategoryTaskUseCase) Execute(ctx context.Context, input UpdateCategoryTaskDTO) error {
+	log.Println("--> Get category by ID")
+	category, err := uc.CategoryTaskRepository.GetByID(ctx, input.UserID, input.ID)
 	if err != nil {
-		return err
+		// Ajuste para verificar o erro de forma mais genérica
+		if err.Error() == "categoria de tarefa não encontrada" || err == nil {
+			return errors.New("categoria de tarefa não encontrada")
+		}
+		return fmt.Errorf("erro ao buscar categoria: %w", err)
 	}
 
-	category := categories[0]
-	if category.Name != dto.Name && dto.Name != "" {
-		category.Name = dto.Name
-	}
-
-	if category.Description != dto.Description && dto.Description != "" {
-		category.Description = dto.Description
-	}
-
-	if category.Name == dto.Name && category.Description == dto.Description && dto.Name == "" && dto.Description == "" {
+	log.Println("-> Verificando campos alterados")
+	if category.Name == input.Name && category.Description == input.Description && input.Name == "" && input.Description == "" {
 		return errors.New("nenhum campo foi alterado")
 	}
+	if category.Name != input.Name && input.Name != "" {
+		category.Name = input.Name
+	}
 
-	err = uc.CategoryTaskRepository.Update(dto.UserID, &category)
-	if err != nil {
-		return err
+	if category.Description != input.Description && input.Description != "" {
+		category.Description = input.Description
+	}
+
+	log.Println("--> Atualizando categoria")
+	if err := uc.CategoryTaskRepository.Update(ctx, category); err != nil {
+		return fmt.Errorf("erro ao atualizar categoria: %w", err)
 	}
 
 	return nil

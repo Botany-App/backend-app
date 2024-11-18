@@ -117,10 +117,10 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Use(middleware.AuthMiddleware(jwtService))
 		r.Post("/", categoryTaskHandlers.CreateCategoryTaskHandler)
 		r.Get("/", categoryTaskHandlers.GetAllCategoryTaskHandler)
-		r.Get("/{id}", categoryTaskHandlers.GetByIdCategoryTaskHandler)
+		r.Get("/id", categoryTaskHandlers.GetByIdCategoryTaskHandler)
 		r.Get("/name", categoryTaskHandlers.GetByNameCategoryTaskHandler)
-		r.Put("/{id}", categoryTaskHandlers.UpdateCategoryTaskHandler)
-		r.Delete("/{id}", categoryTaskHandlers.DeleteCategoryTaskHandler)
+		r.Put("/", categoryTaskHandlers.UpdateCategoryTaskHandler)
+		r.Delete("/", categoryTaskHandlers.DeleteCategoryTaskHandler)
 	})
 	return r, nil
 }

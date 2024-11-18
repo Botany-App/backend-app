@@ -1,14 +1,15 @@
 package repositories
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/lucasBiazon/botany-back/internal/entities"
-	"github.com/pkg/errors"
 )
 
 type CategoryTaskRepositoryImpl struct {
@@ -23,140 +24,195 @@ func NewCategoryTaskRepository(db *sql.DB, rd *redis.Client) *CategoryTaskReposi
 	}
 }
 
-func (r *CategoryTaskRepositoryImpl) GetAll(userID string) ([]entities.CategoryTask, error) {
-	log.Print(userID)
-	key := fmt.Sprintf("category_tasks:user:%s:all", userID)
-	fetch := func() ([]entities.CategoryTask, error) {
-		var categoryTasks []entities.CategoryTask
-		query := `SELECT category_id FROM categories_tasks_users WHERE user_id = $1`
-		var categoryIDs []string
-		rows, err := r.DB.Query(query, userID)
-		log.Print(rows)
-		if err != nil {
-			return nil, errors.New("error fetching data1")
-		}
-		for rows.Next() {
-			var categoryID string
-			err := rows.Scan(&categoryID)
-			if err != nil {
-				return nil, errors.New("error fetching data2")
-			}
-			categoryIDs = append(categoryIDs, categoryID)
-		}
-		log.Print(categoryIDs)
-		query = `SELECT * FROM categories_tasks WHERE id = $1`
-		for _, categoryID := range categoryIDs {
-			var categoryTask entities.CategoryTask
-			err := r.DB.QueryRow(query, categoryID).Scan(&categoryTask.ID, &categoryTask.Name, &categoryTask.Description, &categoryTask.CreatedAt, &categoryTask.UpdatedAt)
-			if err != nil {
-				return nil, errors.New("error fetching data3")
-			}
-			categoryTasks = append(categoryTasks, categoryTask)
-		}
-		log.Println(categoryTasks)
-		return categoryTasks, nil
-	}
-	return GetFromCache(r.RD, key, fetch)
-
-}
-
-func (r *CategoryTaskRepositoryImpl) GetByName(userID string, name string) ([]entities.CategoryTask, error) {
-	key := fmt.Sprintf("category_tasks:user:%s:name:%s", userID, name)
-	fetch := func() ([]entities.CategoryTask, error) {
-		var categoryTasks []entities.CategoryTask
-		query := `SELECT category_id FROM categories_tasks_users WHERE user_id = $1`
-		var categoryIDs []string
-		rows, err := r.DB.Query(query, userID)
-		if err != nil {
-			return nil, errors.New("error fetching data")
-		}
-		for rows.Next() {
-			var categoryID string
-			err := rows.Scan(&categoryID)
-			if err != nil {
-				return nil, errors.New("error fetching data")
-			}
-			categoryIDs = append(categoryIDs, categoryID)
-		}
-		query = `SELECT * FROM categories_tasks WHERE id = $1 AND name ILIKE '%' || $2 || '%'`
-		for _, categoryID := range categoryIDs {
-			var categoryTask entities.CategoryTask
-			err := r.DB.QueryRow(query, categoryID, name).Scan(&categoryTask.ID, &categoryTask.Name, &categoryTask.Description, &categoryTask.CreatedAt, &categoryTask.UpdatedAt)
-			if err != nil {
-				return nil, errors.New("error fetching data")
-			}
-			categoryTasks = append(categoryTasks, categoryTask)
-		}
-		return categoryTasks, nil
-	}
-
-	return GetFromCache(r.RD, key, fetch)
-}
-
-func (r *CategoryTaskRepositoryImpl) GetByID(userID, id string) ([]entities.CategoryTask, error) {
-	key := fmt.Sprintf("category_tasks:user:%s:id:%s", userID, id)
-	fetch := func() ([]entities.CategoryTask, error) {
-		var categoryTasks []entities.CategoryTask
-		query := `SELECT category_id FROM categories_tasks_users WHERE user_id = $1`
-		var categoryIDs []string
-		rows, err := r.DB.Query(query, userID)
-		if err != nil {
-			return nil, errors.New("error fetching data")
-		}
-		for rows.Next() {
-			var categoryID string
-			err := rows.Scan(&categoryID)
-			if err != nil {
-				return nil, errors.New("error fetching data")
-			}
-			categoryIDs = append(categoryIDs, categoryID)
-		}
-		query = `SELECT * FROM categories_tasks WHERE id = $1`
-		for _, categoryID := range categoryIDs {
-			var categoryTask entities.CategoryTask
-			err := r.DB.QueryRow(query, categoryID).Scan(&categoryTask.ID, &categoryTask.Name, &categoryTask.Description, &categoryTask.CreatedAt, &categoryTask.UpdatedAt)
-			if err != nil {
-				return nil, errors.New("error fetching data")
-			}
-			categoryTasks = append(categoryTasks, categoryTask)
-		}
-		return categoryTasks, nil
-	}
-
-	return GetFromCache(r.RD, key, fetch)
-}
-
-func (r *CategoryTaskRepositoryImpl) Create(userID string, category *entities.CategoryTask) error {
-	query := `INSERT INTO categories_tasks (ID, name_category , description_category) VALUES ($1, $2, $3)`
-	_, err := r.DB.Exec(query, category.ID, category.Name, category.Description)
+func (r *CategoryTaskRepositoryImpl) GetAll(ctx context.Context, userID string) ([]entities.CategoryTask, error) {
+	userUUID, err := uuid.Parse(userID)
 	if err != nil {
+		return nil, fmt.Errorf("invalid UUID format for user_id: %w", err)
+	}
+	cacheKey := fmt.Sprintf("categories_task_user_%s", userID)
 
-		return errors.New("primeira error creating category task")
+	fetchFromDB := func() ([]entities.CategoryTask, error) {
+		query := `SELECT ID, name_category, description_category, created_at, updated_at FROM categories_tasks WHERE user_id = $1`
+		rows, err := r.DB.Query(query, userUUID)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		var categories []entities.CategoryTask
+		for rows.Next() {
+			var category entities.CategoryTask
+			err := rows.Scan(&category.ID, &category.Name, &category.Description, &category.CreatedAt, &category.UpdatedAt)
+			if err != nil {
+				return nil, err
+			}
+			category.UserID = userID
+			categories = append(categories, category)
+		}
+
+		if err = rows.Err(); err != nil {
+			return nil, err
+		}
+
+		return categories, nil
 	}
 
-	query = `INSERT INTO categories_tasks_users (ID, category_id, user_id) VALUES ($1, $2, $3)`
-	_, err = r.DB.Exec(query, uuid.New(), category.ID, userID)
+	categories, err := GetFromCache(r.RD, cacheKey, fetchFromDB)
 	if err != nil {
-		return errors.New("segunda error creating category task")
+		return nil, err
+	}
+	if len(categories) == 0 {
+		return nil, errors.New("nenhuma categoria de tarefa encontrada")
+	}
+	return categories, nil
+}
+
+func (r *CategoryTaskRepositoryImpl) GetByName(ctx context.Context, userID string, name string) ([]entities.CategoryTask, error) {
+	cacheKey := fmt.Sprintf("categories_task_user_%s_name_%s", userID, name)
+
+	fetchFromDB := func() ([]entities.CategoryTask, error) {
+		query := `SELECT ID, name_category, description_category, created_at, updated_at FROM categories_tasks WHERE user_id = $1 AND name_category ILIKE '%' || $2 || '%'`
+		rows, err := r.DB.Query(query, userID, name)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		var categories []entities.CategoryTask
+		for rows.Next() {
+			var category entities.CategoryTask
+			err := rows.Scan(&category.ID, &category.Name, &category.Description, &category.CreatedAt, &category.UpdatedAt)
+			if err != nil {
+				return nil, err
+			}
+			category.UserID = userID
+			categories = append(categories, category)
+		}
+
+		if err = rows.Err(); err != nil {
+			return nil, err
+		}
+
+		return categories, nil
+	}
+
+	categories, err := GetFromCache(r.RD, cacheKey, fetchFromDB)
+	if err != nil {
+		return nil, err
+	}
+	if len(categories) == 0 {
+		return nil, errors.New("nenhuma categoria de tarefa encontrada")
+	}
+
+	return categories, nil
+}
+
+func (r *CategoryTaskRepositoryImpl) GetByID(ctx context.Context, userID, id string) (*entities.CategoryTask, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid UUID format for user_id: %w", err)
+	}
+
+	taskUUID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid UUID format for task_id: %w", err)
+	}
+
+	cacheKey := fmt.Sprintf("categories_task_user_%s_id_%s", userID, id)
+
+	fetchFromDB := func() (*entities.CategoryTask, error) {
+		query := `SELECT ID, name_category, description_category, created_at, updated_at 
+				  FROM categories_tasks 
+				  WHERE user_id = $1 AND ID = $2`
+		row := r.DB.QueryRow(query, userUUID, taskUUID)
+
+		var category entities.CategoryTask
+		err := row.Scan(&category.ID, &category.Name, &category.Description, &category.CreatedAt, &category.UpdatedAt)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, fmt.Errorf("categoria de tarefa não encontrada")
+			}
+			return nil, err
+		}
+		category.UserID = userID
+		return &category, nil
+	}
+
+	category, err := GetFromCache[*entities.CategoryTask](r.RD, cacheKey, fetchFromDB)
+	if err != nil {
+		return nil, err
+	}
+
+	if category == nil {
+		return nil, fmt.Errorf("categoria de tarefa não encontrada")
+	}
+
+	return category, nil
+}
+
+func (r *CategoryTaskRepositoryImpl) Create(ctx context.Context, category *entities.CategoryTask) error {
+	query := `
+			INSERT INTO categories_tasks (ID, user_id, name_category, description_category)
+			VALUES ($1, $2, $3, $4)
+	`
+
+	userUUID, err := uuid.Parse(category.UserID)
+	if err != nil {
+		return fmt.Errorf("invalid UUID format for user_id: %w", err)
+	}
+
+	_, err = r.DB.ExecContext(ctx, query, category.ID, userUUID, category.Name, category.Description)
+	if err != nil {
+		return fmt.Errorf("failed to insert category task: %w", err)
+	}
+
+	return nil
+}
+func (r *CategoryTaskRepositoryImpl) Update(ctx context.Context, category *entities.CategoryTask) error {
+	// Parse do UUID do usuário
+	userUUID, err := uuid.Parse(category.UserID)
+	if err != nil {
+		return errors.New("invalid UUID format for user_id")
+	}
+
+	// Query de atualização no banco de dados
+	query := `UPDATE categories_tasks 
+			  SET name_category = $1, description_category = $2, updated_at = $3 
+			  WHERE ID = $4 AND user_id = $5`
+	_, err = r.DB.Exec(query, category.Name, category.Description, category.UpdatedAt, category.ID, userUUID)
+	if err != nil {
+		return err
+	}
+
+	// Remover o cache após a atualização
+	cacheKey := fmt.Sprintf("categories_task_user_%s_id_%s", category.UserID, category.ID)
+	err = r.RD.Del(ctx, cacheKey).Err()
+	if err != nil {
+		log.Printf("Erro ao remover cache para chave %s: %v", cacheKey, err)
 	}
 
 	return nil
 }
 
-func (r *CategoryTaskRepositoryImpl) Update(userID string, category *entities.CategoryTask) error {
-	query := `UPDATE categories_tasks SET name = $1, description = $2 WHERE id = $3`
-	_, err := r.DB.Exec(query, category.Name, category.Description, category.ID)
+func (r *CategoryTaskRepositoryImpl) Delete(ctx context.Context, userID, id string) error {
+	// Query de exclusão no PostgreSQL
+	query := `DELETE FROM categories_tasks WHERE ID = $1 AND user_id = $2`
+	_, err := r.DB.Exec(query, id, userID)
 	if err != nil {
-		return errors.New("error updating category task")
+		return err
 	}
-	return nil
-}
 
-func (r *CategoryTaskRepositoryImpl) Delete(userID, id string) error {
-	query := `DELETE FROM categories_tasks WHERE id = $1`
-	_, err := r.DB.Exec(query, id)
+	// Montagem da chave do cache
+	cacheKey := fmt.Sprintf("categories_task_user_%s_id_%s", userID, id)
+	log.Printf("Removing cache with key: %s", cacheKey)
+
+	// Remoção do cache no Redis
+	err = r.RD.Del(ctx, cacheKey).Err()
 	if err != nil {
-		return errors.New("error deleting category task")
+		log.Printf("Failed to remove cache: %v", err)
+		return fmt.Errorf("failed to remove cache: %w", err)
 	}
+
+	log.Println("Cache successfully removed")
 	return nil
 }

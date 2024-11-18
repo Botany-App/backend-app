@@ -1,6 +1,12 @@
 package usecases_categorytask
 
-import "github.com/lucasBiazon/botany-back/internal/entities"
+import (
+	"context"
+	"log"
+
+	"github.com/lucasBiazon/botany-back/internal/entities"
+	"github.com/pkg/errors"
+)
 
 type DeleteCategoryTaskUseCase struct {
 	CategoryTaskRepository entities.CategoryTaskRepository
@@ -15,11 +21,14 @@ func NewDeleteCategoryTaskUseCase(repository entities.CategoryTaskRepository) *D
 	return &DeleteCategoryTaskUseCase{CategoryTaskRepository: repository}
 }
 
-func (useCase DeleteCategoryTaskUseCase) Execute(dto DeleteCategoryTaskDTO) error {
-	err := useCase.CategoryTaskRepository.Delete(dto.UserID, dto.ID)
+func (useCase DeleteCategoryTaskUseCase) Execute(ctx context.Context, input DeleteCategoryTaskDTO) error {
+	log.Println("--> DELETE CATEGORY TASK")
+	err := useCase.CategoryTaskRepository.Delete(ctx, input.UserID, input.ID)
 	if err != nil {
-		return err
+		log.Println("Erro ao deletar categoria de tarefa")
+		return errors.New("erro ao deletar categoria de tarefa")
 	}
 
+	log.Println("<-Categoria de tarefa deletada com sucesso")
 	return nil
 }

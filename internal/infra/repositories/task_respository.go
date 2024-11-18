@@ -1,11 +1,8 @@
 package repositories
 
 import (
-	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -274,42 +271,4 @@ func (r *TaskRepositoryImpl) Delete(userID string, id string) error {
 		return err
 	}
 	return nil
-}
-
-const cacheDuration = 6 * time.Hour
-
-// Função auxiliar para buscar no cache ou no PostgreSQL
-func GetFromCache[T any](rd *redis.Client, key string, fetch func() (T, error)) (T, error) {
-	var result T
-	ctx := context.Background()
-
-	// Tenta buscar o cache
-	cachedData, err := rd.Get(ctx, key).Result()
-	if err == redis.Nil { // Cache não encontrado
-		// Busca no PostgreSQL
-		fetchedData, fetchErr := fetch()
-		if fetchErr != nil {
-			return result, fetchErr
-		}
-
-		// Serializa e salva no Redis
-		serializedData, err := json.Marshal(fetchedData)
-		if err != nil {
-			return result, fmt.Errorf("failed to serialize data for caching: %w", err)
-		}
-
-		err = rd.Set(ctx, key, serializedData, cacheDuration).Err()
-		if err != nil {
-			fmt.Printf("failed to cache data: %v\n", err)
-		}
-
-		return fetchedData, nil
-	} else if err != nil {
-		return result, err
-	}
-
-	// Desserializa o resultado do cache
-	json.Unmarshal([]byte(cachedData), &result)
-	log.Print(result)
-	return result, nil
 }

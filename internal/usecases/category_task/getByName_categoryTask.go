@@ -1,6 +1,12 @@
 package usecases_categorytask
 
-import "github.com/lucasBiazon/botany-back/internal/entities"
+import (
+	"context"
+	"errors"
+	"log"
+
+	"github.com/lucasBiazon/botany-back/internal/entities"
+)
 
 type GetByNameCategoryTaskDTO struct {
 	UserID string `json:"user_id"`
@@ -17,11 +23,13 @@ func NewGetByNameCategoryTaskUseCase(categoryTaskRepository entities.CategoryTas
 	}
 }
 
-func (u *GetByNameCategoryTaskUseCase) Execute(dto *GetByNameCategoryTaskDTO) ([]entities.CategoryTask, error) {
-	categoryTask, err := u.CategoryTaskRepository.GetByName(dto.UserID, dto.Name)
+func (u *GetByNameCategoryTaskUseCase) Execute(ctx context.Context, input *GetByNameCategoryTaskDTO) ([]entities.CategoryTask, error) {
+	log.Println("-> Get by name category task use case")
+	categoryTask, err := u.CategoryTaskRepository.GetByName(ctx, input.UserID, input.Name)
 	if err != nil {
-		return []entities.CategoryTask{}, err
+		return nil, errors.New("error getting category task by name")
 	}
 
+	log.Println("<- Get by name category task use case")
 	return categoryTask, nil
 }
