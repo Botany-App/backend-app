@@ -21,7 +21,7 @@ func NewDeleteCategoryTaskUseCase(repository entities.CategoryTaskRepository) *D
 	return &DeleteCategoryTaskUseCase{CategoryTaskRepository: repository}
 }
 
-func (useCase DeleteCategoryTaskUseCase) Execute(ctx context.Context, input DeleteCategoryTaskDTO) error {
+func (useCase *DeleteCategoryTaskUseCase) Execute(ctx context.Context, input DeleteCategoryTaskDTO) error {
 	log.Println("--> DELETE CATEGORY TASK")
 	err := useCase.CategoryTaskRepository.Delete(ctx, input.UserID, input.ID)
 	if err != nil {

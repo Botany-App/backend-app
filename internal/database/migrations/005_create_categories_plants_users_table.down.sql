@@ -1,1 +1,0 @@
-DROP TABLE IF EXISTS categories_plants_users;

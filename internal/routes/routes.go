@@ -5,8 +5,9 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-redis/redis/v8"
-	"github.com/lucasBiazon/botany-back/internal/infra/repositories"
 	"github.com/lucasBiazon/botany-back/internal/middleware"
+	"github.com/lucasBiazon/botany-back/internal/repositories"
+	usecases_categoryplant "github.com/lucasBiazon/botany-back/internal/usecases/category_plant"
 	usecases_categorytask "github.com/lucasBiazon/botany-back/internal/usecases/category_task"
 	usecasesTasks "github.com/lucasBiazon/botany-back/internal/usecases/tasks"
 	usecases "github.com/lucasBiazon/botany-back/internal/usecases/user"
@@ -80,6 +81,23 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		GetAllCategoryTaskRoutes,
 	)
 
+	repositoryCategoriesPlants := repositories.NewCategoryPlantRepository(db, clientRedis)
+	CreateCategoryPlantRoutes := usecases_categoryplant.NewCreateCategoryPlantUseCase(repositoryCategoriesPlants)
+	FindAllCategoryPlantRoutes := usecases_categoryplant.NewFindAllCategoryPlantUseCase(repositoryCategoriesPlants)
+	FindByCategoryPlantRoutes := usecases_categoryplant.NewFindByIdCategoryPlantUseCase(repositoryCategoriesPlants)
+	FindByNameCategoryPlantRoutes := usecases_categoryplant.NewCategoryPlantFindByNameUseCase(repositoryCategoriesPlants)
+	UpdateCategoryPlantRoutes := usecases_categoryplant.NewUpdateCategoryPlantUseCase(repositoryCategoriesPlants)
+	DeleteCategoryPlantRoutes := usecases_categoryplant.NewDeleteCategoryPlantUseCase(repositoryCategoriesPlants)
+
+	categoryPlantHandlers := handlers.NewCategoryPlantHandler(
+		CreateCategoryPlantRoutes,
+		FindAllCategoryPlantRoutes,
+		FindByCategoryPlantRoutes,
+		FindByNameCategoryPlantRoutes,
+		UpdateCategoryPlantRoutes,
+		DeleteCategoryPlantRoutes,
+	)
+
 	r := chi.NewRouter()
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/register", userHandlers.RegisterUserHandler)
@@ -121,6 +139,16 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Get("/name", categoryTaskHandlers.GetByNameCategoryTaskHandler)
 		r.Put("/", categoryTaskHandlers.UpdateCategoryTaskHandler)
 		r.Delete("/", categoryTaskHandlers.DeleteCategoryTaskHandler)
+	})
+
+	r.Route("/api/v1/user/plants/categories", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(jwtService))
+		r.Post("/", categoryPlantHandlers.CreateCategoryPlantHandler)
+		r.Get("/", categoryPlantHandlers.FindAllCategoryPlantHandler)
+		r.Get("/id", categoryPlantHandlers.FindByIdCategoryPlantHandler)
+		r.Get("/name", categoryPlantHandlers.FindByNameCategoryPlantHandler)
+		r.Put("/", categoryPlantHandlers.UpdateCategoryPlantHandler)
+		r.Delete("/", categoryPlantHandlers.DeleteCategoryPlantHandler)
 	})
 	return r, nil
 }

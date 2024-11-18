@@ -24,7 +24,7 @@ func NewUpdateCategoryTaskUseCase(repository entities.CategoryTaskRepository) *U
 	return &UpdateCategoryTaskUseCase{CategoryTaskRepository: repository}
 }
 
-func (uc UpdateCategoryTaskUseCase) Execute(ctx context.Context, input UpdateCategoryTaskDTO) error {
+func (uc *UpdateCategoryTaskUseCase) Execute(ctx context.Context, input UpdateCategoryTaskDTO) error {
 	log.Println("--> Get category by ID")
 	category, err := uc.CategoryTaskRepository.GetByID(ctx, input.UserID, input.ID)
 	if err != nil {
