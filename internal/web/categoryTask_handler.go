@@ -9,32 +9,33 @@ import (
 
 	services "github.com/lucasBiazon/botany-back/internal/service"
 	usecases_categorytask "github.com/lucasBiazon/botany-back/internal/usecases/category_task"
+	"github.com/lucasBiazon/botany-back/internal/utils"
 )
 
 type CategoryTaskHandler struct {
-	CreateCategoryTaskUseCase    *usecases_categorytask.CreateCategoryTaskUseCase
-	DeleteCategoryTaskUseCase    *usecases_categorytask.DeleteCategoryTaskUseCase
-	GetByNameCategoryTaskUseCase *usecases_categorytask.GetByNameCategoryTaskUseCase
-	UpdateCategoryTaskUseCase    *usecases_categorytask.UpdateCategoryTaskUseCase
-	GetByIdCategoryTaskUseCase   *usecases_categorytask.GetByIdCategoryTaskUseCase
-	GetAllCategoryTaskUseCase    *usecases_categorytask.GetAllCategoryTaskUseCase
+	CreateCategoryTaskUseCase     *usecases_categorytask.CreateCategoryTaskUseCase
+	DeleteCategoryTaskUseCase     *usecases_categorytask.DeleteCategoryTaskUseCase
+	FindByNameCategoryTaskUseCase *usecases_categorytask.FindByNameCategoryTaskUseCase
+	UpdateCategoryTaskUseCase     *usecases_categorytask.UpdateCategoryTaskUseCase
+	FindByIdCategoryTaskUseCase   *usecases_categorytask.FindByIdCategoryTaskUseCase
+	FindAllCategoryTaskUseCase    *usecases_categorytask.FindAllCategoryTaskUseCase
 }
 
 func NewCategoryTaskHandler(
 	createCategoryTaskUseCase *usecases_categorytask.CreateCategoryTaskUseCase,
 	deleteCategoryTaskUseCase *usecases_categorytask.DeleteCategoryTaskUseCase,
-	getByNameCategoryTaskUseCase *usecases_categorytask.GetByNameCategoryTaskUseCase,
+	findByNameCategoryTaskUseCase *usecases_categorytask.FindByNameCategoryTaskUseCase,
 	updateCategoryTaskUseCase *usecases_categorytask.UpdateCategoryTaskUseCase,
-	getByIdCategoryTaskUseCase *usecases_categorytask.GetByIdCategoryTaskUseCase,
-	getAllCategoryTaskUseCase *usecases_categorytask.GetAllCategoryTaskUseCase,
+	findByIdCategoryTaskUseCase *usecases_categorytask.FindByIdCategoryTaskUseCase,
+	findAllCategoryTaskUseCase *usecases_categorytask.FindAllCategoryTaskUseCase,
 ) *CategoryTaskHandler {
 	return &CategoryTaskHandler{
-		CreateCategoryTaskUseCase:    createCategoryTaskUseCase,
-		DeleteCategoryTaskUseCase:    deleteCategoryTaskUseCase,
-		GetByNameCategoryTaskUseCase: getByNameCategoryTaskUseCase,
-		UpdateCategoryTaskUseCase:    updateCategoryTaskUseCase,
-		GetByIdCategoryTaskUseCase:   getByIdCategoryTaskUseCase,
-		GetAllCategoryTaskUseCase:    getAllCategoryTaskUseCase,
+		CreateCategoryTaskUseCase:     createCategoryTaskUseCase,
+		DeleteCategoryTaskUseCase:     deleteCategoryTaskUseCase,
+		FindByNameCategoryTaskUseCase: findByNameCategoryTaskUseCase,
+		UpdateCategoryTaskUseCase:     updateCategoryTaskUseCase,
+		FindByIdCategoryTaskUseCase:   findByIdCategoryTaskUseCase,
+		FindAllCategoryTaskUseCase:    findAllCategoryTaskUseCase,
 	}
 }
 
@@ -42,136 +43,136 @@ func (h *CategoryTaskHandler) CreateCategoryTaskHandler(w http.ResponseWriter, r
 	auth := r.Header.Get("Authorization")
 	userID, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
-		jsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
+		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
-	var categoryTask usecases_categorytask.CreateCategoryTaskDTO
+	var categoryTask usecases_categorytask.CreateCategoryTaskInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&categoryTask); err != nil {
 		log.Println(err)
-		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
+		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 	categoryTask.UserID = userID
 
 	if err := h.CreateCategoryTaskUseCase.Execute(context.Background(), categoryTask); err != nil {
 		log.Print(err)
-		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
+		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
-	jsonResponse(w, http.StatusCreated, "success", "Categoria de tarefa criada com sucesso", nil)
+	utils.JsonResponse(w, http.StatusCreated, "success", "Categoria de tarefa criada com sucesso", nil)
 }
 
 func (h *CategoryTaskHandler) DeleteCategoryTaskHandler(w http.ResponseWriter, r *http.Request) {
 	auth := r.Header.Get("Authorization")
 	userID, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
-		jsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
+		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
-	var categoryTask usecases_categorytask.DeleteCategoryTaskDTO
+	var categoryTask usecases_categorytask.DeleteCategoryTaskInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&categoryTask); err != nil {
-		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
+		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
 	categoryTask.UserID = userID
 
 	if err := h.DeleteCategoryTaskUseCase.Execute(context.Background(), categoryTask); err != nil {
-		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
+		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
-	jsonResponse(w, http.StatusOK, "success", "Categoria de tarefa deletada com sucesso", nil)
+	utils.JsonResponse(w, http.StatusOK, "success", "Categoria de tarefa deletada com sucesso", nil)
 }
 
-func (h *CategoryTaskHandler) GetByNameCategoryTaskHandler(w http.ResponseWriter, r *http.Request) {
+func (h *CategoryTaskHandler) FindByNameCategoryTaskHandler(w http.ResponseWriter, r *http.Request) {
 	auth := r.Header.Get("Authorization")
 	userID, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
-		jsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
+		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
 
-	var categoryTask usecases_categorytask.GetByNameCategoryTaskDTO
+	var categoryTask usecases_categorytask.FindByNameCategoryTaskInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&categoryTask); err != nil {
-		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
+		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
 	categoryTask.UserID = userID
 
-	categoryTasks, err := h.GetByNameCategoryTaskUseCase.Execute(context.Background(), &categoryTask)
+	categoryTasks, err := h.FindByNameCategoryTaskUseCase.Execute(context.Background(), categoryTask)
 	if err != nil {
-		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
+		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
-	jsonResponse(w, http.StatusOK, "success", "Categoria de tarefa encontrada", categoryTasks)
+	utils.JsonResponse(w, http.StatusOK, "success", "Categoria de tarefa encontrada", categoryTasks)
 }
 
 func (h *CategoryTaskHandler) UpdateCategoryTaskHandler(w http.ResponseWriter, r *http.Request) {
 	auth := r.Header.Get("Authorization")
 	userID, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
-		jsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
+		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
 
-	var categoryTask usecases_categorytask.UpdateCategoryTaskDTO
+	var categoryTask usecases_categorytask.UpdateCategoryTaskInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&categoryTask); err != nil {
-		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
+		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
 	categoryTask.UserID = userID
 
 	if err := h.UpdateCategoryTaskUseCase.Execute(context.Background(), categoryTask); err != nil {
-		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
+		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
-	jsonResponse(w, http.StatusOK, "success", "Categoria de tarefa atualizada com sucesso", nil)
+	utils.JsonResponse(w, http.StatusOK, "success", "Categoria de tarefa atualizada com sucesso", nil)
 }
 
-func (h *CategoryTaskHandler) GetByIdCategoryTaskHandler(w http.ResponseWriter, r *http.Request) {
+func (h *CategoryTaskHandler) FindByIdCategoryTaskHandler(w http.ResponseWriter, r *http.Request) {
 	auth := r.Header.Get("Authorization")
 	userID, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
-		jsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
+		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
 
-	var categoryTask usecases_categorytask.GetByIdCategoryTaskDTO
+	var categoryTask usecases_categorytask.FindByIdCategoryTaskInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&categoryTask); err != nil {
-		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
+		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
 	categoryTask.UserID = userID
 
-	categoryTaskFound, err := h.GetByIdCategoryTaskUseCase.Execute(context.Background(), &categoryTask)
+	categoryTaskFound, err := h.FindByIdCategoryTaskUseCase.Execute(context.Background(), categoryTask)
 	if err != nil {
-		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
+		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
 
-	jsonResponse(w, http.StatusOK, "success", "Categoria de tarefa encontrada", categoryTaskFound)
+	utils.JsonResponse(w, http.StatusOK, "success", "Categoria de tarefa encontrada", categoryTaskFound)
 }
 
-func (h *CategoryTaskHandler) GetAllCategoryTaskHandler(w http.ResponseWriter, r *http.Request) {
+func (h *CategoryTaskHandler) FindAllCategoryTaskHandler(w http.ResponseWriter, r *http.Request) {
 	auth := r.Header.Get("Authorization")
 	userID, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
-		jsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
+		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
 
-	var categoryTask usecases_categorytask.GetAllCategoryTaskDTO
+	var categoryTask usecases_categorytask.FindAllCategoryTaskInputDTO
 	categoryTask.UserID = userID
-	categoryTasks, err := h.GetAllCategoryTaskUseCase.Execute(context.Background(), &categoryTask)
+	categoryTasks, err := h.FindAllCategoryTaskUseCase.Execute(context.Background(), categoryTask)
 	if err != nil {
-		jsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
+		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
-	jsonResponse(w, http.StatusOK, "success", "Categorias de tarefas encontradas", categoryTasks)
+	utils.JsonResponse(w, http.StatusOK, "success", "Categorias de tarefas encontradas", categoryTasks)
 }

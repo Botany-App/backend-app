@@ -2,7 +2,6 @@ package routes
 
 import (
 	"database/sql"
-	"net/http"
 
 	"github.com/go-chi/chi"
 	"github.com/go-redis/redis/v8"
@@ -19,10 +18,11 @@ import (
 
 func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services.JWTService) (*chi.Mux, error) {
 
+	// User Routes
 	repository := repositories.NewUserRepository(db, clientRedis)
 	RegisterUserRoutes := usecases.NewRegisterUserUseCase(repository)
 	LoginUserRoutes := usecases.NewLoginUserUseCase(repository)
-	GetUserRoutes := usecases.NewGetUserByIdUseCase(repository)
+	FindUserRoutes := usecases.NewFindUserByIdUseCase(repository)
 	DeleteUserRoutes := usecases.NewDeleteUserUseCase(repository)
 	UpdateUserRoutes := usecases.NewUpdateUserUseCase(repository)
 	RequestPasswordResetUserRoutes := usecases.NewRequestPasswordResetUseCase(repository, jwtService)
@@ -31,13 +31,14 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 	userHandlers := handlers.NewUserHandlers(
 		RegisterUserRoutes,
 		LoginUserRoutes,
-		GetUserRoutes,
+		FindUserRoutes,
 		DeleteUserRoutes,
 		UpdateUserRoutes,
 		RequestPasswordResetUserRoutes,
 		ResetPasswordUserRoutes,
 	)
 
+	// Task Routes
 	repositoryTask := repositories.NewTaskRepository(db, clientRedis)
 	CreateTaskRoutes := usecasesTasks.NewCreateTaskUseCase(repositoryTask)
 	FindAllTasksRoutes := usecasesTasks.NewFindAllTaskUseCase(repositoryTask)
@@ -65,23 +66,25 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		FindTasksFarFromDeadlineTaskRoutes,
 	)
 
+	// Category Task Routes
 	repositoryCategoriesTask := repositories.NewCategoryTaskRepository(db, clientRedis)
 	CreateCategoryTaskRoutes := usecases_categorytask.NewCreateCategoryTaskUseCase(repositoryCategoriesTask)
-	GetAllCategoryTaskRoutes := usecases_categorytask.NewGetAllCategoryTaskUseCase(repositoryCategoriesTask)
-	GetCategoryTaskByIdRoutes := usecases_categorytask.NewGetByIdCategoryTaskUseCase(repositoryCategoriesTask)
-	GetByNameCategoryTaskRoutes := usecases_categorytask.NewGetByNameCategoryTaskUseCase(repositoryCategoriesTask)
+	FindAllCategoryTaskRoutes := usecases_categorytask.NewFindAllCategoryTaskUseCase(repositoryCategoriesTask)
+	FindCategoryTaskByIdRoutes := usecases_categorytask.NewFindByIdCategoryTaskUseCase(repositoryCategoriesTask)
+	FindByNameCategoryTaskRoutes := usecases_categorytask.NewFindByNameCategoryTaskUseCase(repositoryCategoriesTask)
 	UpdateCategoryTaskRoutes := usecases_categorytask.NewUpdateCategoryTaskUseCase(repositoryCategoriesTask)
 	DeleteCategoryTaskRoutes := usecases_categorytask.NewDeleteCategoryTaskUseCase(repositoryCategoriesTask)
 
 	categoryTaskHandlers := handlers.NewCategoryTaskHandler(
 		CreateCategoryTaskRoutes,
 		DeleteCategoryTaskRoutes,
-		GetByNameCategoryTaskRoutes,
+		FindByNameCategoryTaskRoutes,
 		UpdateCategoryTaskRoutes,
-		GetCategoryTaskByIdRoutes,
-		GetAllCategoryTaskRoutes,
+		FindCategoryTaskByIdRoutes,
+		FindAllCategoryTaskRoutes,
 	)
 
+	// Category Plant Routes
 	repositoryCategoriesPlants := repositories.NewCategoryPlantRepository(db, clientRedis)
 	CreateCategoryPlantRoutes := usecases_categoryplant.NewCreateCategoryPlantUseCase(repositoryCategoriesPlants)
 	FindAllCategoryPlantRoutes := usecases_categoryplant.NewFindAllCategoryPlantUseCase(repositoryCategoriesPlants)
@@ -98,17 +101,12 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		UpdateCategoryPlantRoutes,
 		DeleteCategoryPlantRoutes,
 	)
-	middleware.InitPrometheus()
-	r := chi.NewRouter()
 
+	// Routes
+	r := chi.NewRouter()
 	r.Use(middleware.ApiKeyMiddleware)
 	r.Use(middleware.RateLimitMiddleware(clientRedis))
 	r.Use(middleware.RetryMiddleware(3, 2))
-
-	r.Get("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		middleware.PrometheusHandler().ServeHTTP(w, r)
-	})
-
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/register", userHandlers.RegisterUserHandler)
 		r.Post("/register/confirm", userHandlers.ConfirmEmailHandler)
@@ -117,15 +115,13 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Post("/password-reset/request", userHandlers.RequestPasswordResetUserHandler)
 		r.Post("/password-reset", userHandlers.ResetPasswordUserHandler)
 	})
-
 	r.Route("/api/v1/user", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware(jwtService))
-		r.Get("/", userHandlers.GetByIdUserHandler)
+		r.Get("/", userHandlers.FindByIdUserHandler)
 		r.Delete("/", userHandlers.DeleteUserHandler)
 		r.Put("/", userHandlers.UpdateUserHandler)
 	})
-
-	r.Route("/api/v1/user/tasks", func(r chi.Router) {
+	r.Route("/api/v1/task", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware(jwtService))
 		r.Post("/", taskHandlers.CreateTaskHandler)
 		r.Get("/", taskHandlers.FindAllTaskHandler)
@@ -139,18 +135,16 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Put("/{id}", taskHandlers.UpdateTaskHandler)
 		r.Delete("/{id}", taskHandlers.DeleteTaskHandler)
 	})
-
-	r.Route("/api/v1/user/tasks/categories", func(r chi.Router) {
+	r.Route("/api/v1/category-task", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware(jwtService))
 		r.Post("/", categoryTaskHandlers.CreateCategoryTaskHandler)
-		r.Get("/", categoryTaskHandlers.GetAllCategoryTaskHandler)
-		r.Get("/id", categoryTaskHandlers.GetByIdCategoryTaskHandler)
-		r.Get("/name", categoryTaskHandlers.GetByNameCategoryTaskHandler)
+		r.Get("/", categoryTaskHandlers.FindAllCategoryTaskHandler)
+		r.Get("/id", categoryTaskHandlers.FindByIdCategoryTaskHandler)
+		r.Get("/name", categoryTaskHandlers.FindByNameCategoryTaskHandler)
 		r.Put("/", categoryTaskHandlers.UpdateCategoryTaskHandler)
 		r.Delete("/", categoryTaskHandlers.DeleteCategoryTaskHandler)
 	})
-
-	r.Route("/api/v1/user/plants/categories", func(r chi.Router) {
+	r.Route("/api/v1/category-plant", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware(jwtService))
 		r.Post("/", categoryPlantHandlers.CreateCategoryPlantHandler)
 		r.Get("/", categoryPlantHandlers.FindAllCategoryPlantHandler)
@@ -159,5 +153,6 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Put("/", categoryPlantHandlers.UpdateCategoryPlantHandler)
 		r.Delete("/", categoryPlantHandlers.DeleteCategoryPlantHandler)
 	})
+
 	return r, nil
 }

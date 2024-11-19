@@ -3,6 +3,7 @@ package usecases_categoryplant
 import (
 	"context"
 	"errors"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/lucasBiazon/botany-back/internal/entities"
@@ -12,7 +13,7 @@ type UpdateCategoryPlantUseCase struct {
 	UpdateCategoryPlantRepository entities.CategoryPlantRepository
 }
 
-type UpdateCategoryPlantDTO struct {
+type UpdateCategoryPlantInputDTO struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -23,7 +24,8 @@ func NewUpdateCategoryPlantUseCase(repository entities.CategoryPlantRepository) 
 	return &UpdateCategoryPlantUseCase{UpdateCategoryPlantRepository: repository}
 }
 
-func (uc *UpdateCategoryPlantUseCase) Execute(ctx context.Context, input UpdateCategoryPlantDTO) error {
+func (uc *UpdateCategoryPlantUseCase) Execute(ctx context.Context, input UpdateCategoryPlantInputDTO) error {
+	log.Print("UpdateCategoryPlantUseCase - Execute")
 	userID, err := uuid.Parse(input.UserID)
 	if err != nil {
 		return errors.New("invalid user id")

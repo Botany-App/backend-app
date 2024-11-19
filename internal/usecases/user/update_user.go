@@ -24,16 +24,13 @@ func NewUpdateUserUseCase(userRepo entities.UserRepository) *UpdateUserUseCase {
 	}
 }
 
-// Execute atualiza o usuário com base no DTO fornecido
 func (uc *UpdateUserUseCase) Execute(ctx context.Context, input UpdateUserInputDTO) error {
-	log.Println("--> Atualizando usuário")
-	user, err := uc.UserRepository.GetByID(ctx, input.ID)
-	log.Println(user.Name, user.Email)
+	log.Println("UpdateUserUseCase - Execute")
+	user, err := uc.UserRepository.FindByID(ctx, input.ID)
 	if err != nil {
 		return errors.New("erro ao buscar usuário")
 	}
 
-	log.Println("--> Verificando campos alterados")
 	if input.Name == user.Name && input.Email == user.Email {
 		return errors.New("nenhum campo foi alterado")
 	}
@@ -45,11 +42,9 @@ func (uc *UpdateUserUseCase) Execute(ctx context.Context, input UpdateUserInputD
 		user.Email = input.Email
 	}
 
-	log.Println("--> Atualizando usuário")
 	if err := uc.UserRepository.Update(ctx, user); err != nil {
 		return errors.New("erro ao atualizar usuário")
 	}
 
-	log.Println("<- Usuário atualizado com sucesso")
 	return nil
 }

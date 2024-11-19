@@ -9,7 +9,7 @@ import (
 	"github.com/lucasBiazon/botany-back/internal/entities"
 )
 
-type CreateCategoryPlantDTO struct {
+type CreateCategoryPlantInputDTO struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	UserID      string `json:"user_id"`
@@ -23,7 +23,7 @@ func NewCreateCategoryPlantUseCase(createCategoryPlant entities.CategoryPlantRep
 	return &CreateCategoryPlantUseCase{CreateCategoryPlant: createCategoryPlant}
 }
 
-func (uc *CreateCategoryPlantUseCase) Execute(ctx context.Context, input CreateCategoryPlantDTO) error {
+func (uc *CreateCategoryPlantUseCase) Execute(ctx context.Context, input CreateCategoryPlantInputDTO) error {
 	log.Println("CreateCategoryPlantUseCase - Execute")
 	userID, err := uuid.Parse(input.UserID)
 	if err != nil {
@@ -32,6 +32,10 @@ func (uc *CreateCategoryPlantUseCase) Execute(ctx context.Context, input CreateC
 	category, err := entities.NewCategoryPlant(input.Name, input.Description, userID)
 	if err != nil {
 		return errors.New("error creating category plant")
+	}
+	categoryPlantExists, _ := uc.CreateCategoryPlant.FindByName(ctx, userID, category.Name)
+	if categoryPlantExists != nil {
+		return errors.New("category plant already exists")
 	}
 	err = uc.CreateCategoryPlant.Create(ctx, category)
 	if err != nil {

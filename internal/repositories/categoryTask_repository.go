@@ -24,14 +24,14 @@ func NewCategoryTaskRepository(db *sql.DB, rd *redis.Client) *CategoryTaskReposi
 	}
 }
 
-func (r *CategoryTaskRepositoryImpl) GetAll(ctx context.Context, userID string) ([]entities.CategoryTask, error) {
+func (r *CategoryTaskRepositoryImpl) FindAll(ctx context.Context, userID string) ([]*entities.CategoryTask, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid UUID format for user_id: %w", err)
 	}
 	cacheKey := fmt.Sprintf("categories_task_user_%s", userID)
 
-	fetchFromDB := func() ([]entities.CategoryTask, error) {
+	fetchFromDB := func() ([]*entities.CategoryTask, error) {
 		query := `SELECT ID, name_category, description_category, created_at, updated_at FROM categories_tasks WHERE user_id = $1`
 		rows, err := r.DB.Query(query, userUUID)
 		if err != nil {
@@ -39,7 +39,7 @@ func (r *CategoryTaskRepositoryImpl) GetAll(ctx context.Context, userID string) 
 		}
 		defer rows.Close()
 
-		var categories []entities.CategoryTask
+		var categories []*entities.CategoryTask
 		for rows.Next() {
 			var category entities.CategoryTask
 			err := rows.Scan(&category.ID, &category.Name, &category.Description, &category.CreatedAt, &category.UpdatedAt)
@@ -47,7 +47,7 @@ func (r *CategoryTaskRepositoryImpl) GetAll(ctx context.Context, userID string) 
 				return nil, err
 			}
 			category.UserID = userID
-			categories = append(categories, category)
+			categories = append(categories, &category)
 		}
 
 		if err = rows.Err(); err != nil {
@@ -67,10 +67,10 @@ func (r *CategoryTaskRepositoryImpl) GetAll(ctx context.Context, userID string) 
 	return categories, nil
 }
 
-func (r *CategoryTaskRepositoryImpl) GetByName(ctx context.Context, userID string, name string) ([]entities.CategoryTask, error) {
+func (r *CategoryTaskRepositoryImpl) FindByName(ctx context.Context, userID string, name string) ([]*entities.CategoryTask, error) {
 	cacheKey := fmt.Sprintf("categories_task_user_%s_name_%s", userID, name)
 
-	fetchFromDB := func() ([]entities.CategoryTask, error) {
+	fetchFromDB := func() ([]*entities.CategoryTask, error) {
 		query := `SELECT ID, name_category, description_category, created_at, updated_at FROM categories_tasks WHERE user_id = $1 AND name_category ILIKE '%' || $2 || '%'`
 		rows, err := r.DB.Query(query, userID, name)
 		if err != nil {
@@ -78,7 +78,7 @@ func (r *CategoryTaskRepositoryImpl) GetByName(ctx context.Context, userID strin
 		}
 		defer rows.Close()
 
-		var categories []entities.CategoryTask
+		var categories []*entities.CategoryTask
 		for rows.Next() {
 			var category entities.CategoryTask
 			err := rows.Scan(&category.ID, &category.Name, &category.Description, &category.CreatedAt, &category.UpdatedAt)
@@ -86,7 +86,7 @@ func (r *CategoryTaskRepositoryImpl) GetByName(ctx context.Context, userID strin
 				return nil, err
 			}
 			category.UserID = userID
-			categories = append(categories, category)
+			categories = append(categories, &category)
 		}
 
 		if err = rows.Err(); err != nil {
@@ -107,7 +107,7 @@ func (r *CategoryTaskRepositoryImpl) GetByName(ctx context.Context, userID strin
 	return categories, nil
 }
 
-func (r *CategoryTaskRepositoryImpl) GetByID(ctx context.Context, userID, id string) (*entities.CategoryTask, error) {
+func (r *CategoryTaskRepositoryImpl) FindByID(ctx context.Context, userID, id string) (*entities.CategoryTask, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid UUID format for user_id: %w", err)

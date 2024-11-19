@@ -26,19 +26,17 @@ func NewRequestPasswordResetUseCase(userRepo entities.UserRepository, jwtService
 }
 
 func (uc *RequestPasswordResetUserUseCase) Execute(ctx context.Context, input RequestPasswordResetUserInputDTO) error {
-	log.Println("-> Request Password Reset User")
-	user, err := uc.UserRepository.GetByEmail(ctx, input.Email)
+	log.Println("RequestPasswordResetUserUseCase - Execute")
+	user, err := uc.UserRepository.FindByEmail(ctx, input.Email)
 	if err != nil {
 		return errors.New("usuário não encontrado")
 	}
 
-	log.Println("-> Generate Token")
 	resetToken, err := uc.JWTService.GenerateToken(user.ID)
 	if err != nil {
 		return errors.New("erro ao gerar token de redefinição de senha")
 	}
 
-	log.Println("-> Send Email")
 	err = services.NewEmailService().SendEmailResetPassword(user.Email, resetToken)
 	if err != nil {
 		return errors.New("erro ao enviar email de redefinição de senha")

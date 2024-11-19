@@ -20,9 +20,9 @@ type Species struct {
 }
 
 type SpeciesRepository interface {
-	GetAll(ctx context.Context) ([]Species, error)
-	GetByName(ctx context.Context, name string) ([]Species, error)
+	GetAll(ctx context.Context) ([]*Species, error)
+	GetByName(ctx context.Context, name string) ([]*Species, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*Species, error)
-	GetByHarvestTimeRange(ctx context.Context, min, max float64) ([]Species, error)
-	GetByWeights(ctx context.Context, minSun, maxSun, minFert, maxFert float64) ([]Species, error)
+	GetByHarvestTimeRange(ctx context.Context, min, max float64) ([]*Species, error)
+	GetByWeights(ctx context.Context, minSun, maxSun, minFert, maxFert float64) ([]*Species, error)
 }

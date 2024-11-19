@@ -12,7 +12,7 @@ type FindByNameCategoryPlantUseCase struct {
 	FindByNameCategoryPlantRepository entities.CategoryPlantRepository
 }
 
-type FindByNameCategoryPlantDTO struct {
+type FindByNameCategoryPlantInputDTO struct {
 	Name   string `json:"name"`
 	UserID string `json:"user_id"`
 }
@@ -21,7 +21,7 @@ func NewCategoryPlantFindByNameUseCase(repository entities.CategoryPlantReposito
 	return &FindByNameCategoryPlantUseCase{FindByNameCategoryPlantRepository: repository}
 }
 
-func (uc *FindByNameCategoryPlantUseCase) Execute(ctx context.Context, input FindByNameCategoryPlantDTO) ([]*entities.CategoryPlant, error) {
+func (uc *FindByNameCategoryPlantUseCase) Execute(ctx context.Context, input FindByNameCategoryPlantInputDTO) ([]*entities.CategoryPlant, error) {
 	log.Println("FindByNameCategoryPlantUseCase - Execute")
 	userID, err := uuid.Parse(input.UserID)
 	if err != nil {

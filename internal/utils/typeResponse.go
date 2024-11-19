@@ -1,4 +1,4 @@
-package handlers
+package utils
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func jsonResponse(w http.ResponseWriter, statusCode int, status, message string, data interface{}) {
+func JsonResponse(w http.ResponseWriter, statusCode int, status, message string, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	log.Println(data)

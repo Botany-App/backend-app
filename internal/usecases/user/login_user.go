@@ -25,7 +25,7 @@ func NewLoginUserUseCase(userRepo entities.UserRepository) *LoginUserUseCase {
 }
 
 func (uc *LoginUserUseCase) Execute(ctx context.Context, input LoginUserInputDTO) (string, error) {
-	log.Println("--> lOGANDO USUÁRIO")
+	log.Println("LoginUserUseCase - Execute")
 	ID, err := uc.UserRepository.Login(ctx, input.Email, input.Password)
 	if err != nil {
 		if ID == "not found" {
@@ -42,6 +42,5 @@ func (uc *LoginUserUseCase) Execute(ctx context.Context, input LoginUserInputDTO
 	if err != nil {
 		return "", err
 	}
-	log.Println("<- Token gerado com sucesso")
 	return tokenJWT, nil
 }

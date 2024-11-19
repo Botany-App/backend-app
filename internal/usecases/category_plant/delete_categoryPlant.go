@@ -13,7 +13,7 @@ type DeleteCategoryPlantUseCase struct {
 	DeleteCategoryPlant entities.CategoryPlantRepository
 }
 
-type DeleteCategoryPlantDTO struct {
+type DeleteCategoryPlantInputDTO struct {
 	ID     string `json:"id"`
 	UserID string `json:"user_id"`
 }
@@ -24,8 +24,8 @@ func NewDeleteCategoryPlantUseCase(repository entities.CategoryPlantRepository) 
 	}
 }
 
-func (uc *DeleteCategoryPlantUseCase) Execute(ctx context.Context, input DeleteCategoryPlantDTO) error {
-	log.Print("DeleteCategoryPlantUseCase.Execute")
+func (uc *DeleteCategoryPlantUseCase) Execute(ctx context.Context, input DeleteCategoryPlantInputDTO) error {
+	log.Print("DeleteCategoryPlantUseCase - Execute")
 	userID, err := uuid.Parse(input.UserID)
 	if err != nil {
 		return errors.New("invalid user id")
@@ -39,5 +39,6 @@ func (uc *DeleteCategoryPlantUseCase) Execute(ctx context.Context, input DeleteC
 	if err != nil {
 		return errors.New("error deleting category plant")
 	}
+
 	return nil
 }

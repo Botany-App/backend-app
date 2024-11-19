@@ -36,7 +36,7 @@ func (r *UserRepositoryImpl) Create(ctx context.Context, user *entities.User) er
 	return nil
 }
 
-func (r *UserRepositoryImpl) GetByID(ctx context.Context, ID string) (*entities.User, error) {
+func (r *UserRepositoryImpl) FindByID(ctx context.Context, ID string) (*entities.User, error) {
 	query := `SELECT ID, name_user, email, password_hash, created_at, updated_at FROM users WHERE id=$1`
 
 	row := r.DB.QueryRow(query, ID)
@@ -52,7 +52,7 @@ func (r *UserRepositoryImpl) GetByID(ctx context.Context, ID string) (*entities.
 	return user, nil
 }
 
-func (r *UserRepositoryImpl) GetByEmail(ctx context.Context, email string) (*entities.User, error) {
+func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*entities.User, error) {
 	query := `SELECT ID, name_user, email, password_hash, created_at, updated_at FROM users WHERE email=$1`
 
 	row := r.DB.QueryRow(query, email)

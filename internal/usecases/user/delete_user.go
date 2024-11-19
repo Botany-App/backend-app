@@ -22,12 +22,11 @@ func NewDeleteUserUseCase(userRepository entities.UserRepository) *DeleteUserUse
 }
 
 func (uc *DeleteUserUseCase) Execute(ctx context.Context, input DeleteUserInputDTO) error {
-	log.Println("--> DELETE USER")
+	log.Println("DeleteUserUseCase - Execute")
 	err := uc.userRepository.Delete(ctx, input.ID)
 	if err != nil {
 		log.Println("Erro ao deletar usuário")
 		return err
 	}
-	log.Println("<-Usuário deletado com sucesso")
 	return nil
 }

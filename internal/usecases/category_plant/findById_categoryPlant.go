@@ -3,6 +3,7 @@ package usecases_categoryplant
 import (
 	"context"
 	"errors"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/lucasBiazon/botany-back/internal/entities"
@@ -12,7 +13,7 @@ type FindByIdCategoryPlantUseCase struct {
 	FindByIDCategoryPlantRepository entities.CategoryPlantRepository
 }
 
-type FindByIdCategoryPlantDTO struct {
+type FindByIdCategoryPlantInputDTO struct {
 	ID     string `json:"id"`
 	UserID string `json:"user_id"`
 }
@@ -21,7 +22,8 @@ func NewFindByIdCategoryPlantUseCase(repository entities.CategoryPlantRepository
 	return &FindByIdCategoryPlantUseCase{FindByIDCategoryPlantRepository: repository}
 }
 
-func (uc *FindByIdCategoryPlantUseCase) Execute(ctx context.Context, input FindByIdCategoryPlantDTO) (*entities.CategoryPlant, error) {
+func (uc *FindByIdCategoryPlantUseCase) Execute(ctx context.Context, input FindByIdCategoryPlantInputDTO) (*entities.CategoryPlant, error) {
+	log.Println("FindByIdCategoryPlantUseCase - Execute")
 	id, err := uuid.Parse(input.ID)
 	if err != nil {
 		return nil, errors.New("ID is not a valid UUID")

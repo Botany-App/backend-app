@@ -12,7 +12,7 @@ type FindAllCategoryPlantUseCase struct {
 	FindAllCategoryPlantRepository entities.CategoryPlantRepository
 }
 
-type FindAllCategoryPlantDTO struct {
+type FindAllCategoryPlantInputDTO struct {
 	UserID string `json:"user_id"`
 }
 
@@ -20,9 +20,8 @@ func NewFindAllCategoryPlantUseCase(categoryPlantRepository entities.CategoryPla
 	return &FindAllCategoryPlantUseCase{FindAllCategoryPlantRepository: categoryPlantRepository}
 }
 
-func (uc *FindAllCategoryPlantUseCase) Execute(ctx context.Context, input FindAllCategoryPlantDTO) ([]*entities.CategoryPlant, error) {
-	log.Println("FindAllCategoryPlantUseCase: Executing...")
-	defer log.Println("FindAllCategoryPlantUseCase: End")
+func (uc *FindAllCategoryPlantUseCase) Execute(ctx context.Context, input FindAllCategoryPlantInputDTO) ([]*entities.CategoryPlant, error) {
+	log.Println("FindAllCategoryPlantUseCase - Execute")
 
 	userID, err := uuid.Parse(input.UserID)
 	if err != nil {

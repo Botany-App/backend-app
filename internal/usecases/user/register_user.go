@@ -32,38 +32,34 @@ func NewRegisterUserUseCase(userRepository entities.UserRepository) *RegisterUse
 }
 
 func (uc *RegisterUserUseCase) StartRegistration(ctx context.Context, input RegisterUserInputDTO) error {
+	log.Println("StartRegistrationUseCase - Execute")
 	user, err := entities.NewUser(input.Name, input.Email, input.Password)
 	if err != nil {
 		return err
 	}
 
-	userExists, err := uc.userRepository.GetByEmail(ctx, user.Email)
+	userExists, err := uc.userRepository.FindByEmail(ctx, user.Email)
 	if err != nil {
 		log.Print(err)
 		return errors.New("erro ao buscar usuário")
 	}
 	if userExists != nil {
-
 		return errors.New("email já cadastrado")
 	}
 
-	log.Println("--> Criando user")
 	if err := uc.userRepository.Create(ctx, user); err != nil {
 		return err
 	}
 
-	log.Println("--> Gerando token")
 	tokenVerification, err := services.NewEmailService().GenerateCode()
 	if err != nil {
 		return err
 	}
 
-	log.Println("--> Salvando token")
 	if err = uc.userRepository.StoreToken(ctx, user.Email, tokenVerification); err != nil {
 		return err
 	}
 
-	log.Println("--> Enviando email")
 	if err = services.NewEmailService().SendEmail(user.Email, tokenVerification); err != nil {
 		return err
 	}
@@ -71,7 +67,7 @@ func (uc *RegisterUserUseCase) StartRegistration(ctx context.Context, input Regi
 }
 
 func (uc *RegisterUserUseCase) ConfirmEmail(ctx context.Context, input ConfirmEmailInputDTO) error {
-	log.Println("--> Confirming email")
+	log.Println("ConfirmEmailUseCase - Execute")
 	err := uc.userRepository.ActivateAccount(ctx, input.Email, input.Token)
 	if err != nil {
 		return err
@@ -80,12 +76,11 @@ func (uc *RegisterUserUseCase) ConfirmEmail(ctx context.Context, input ConfirmEm
 }
 
 func (uc *RegisterUserUseCase) ResendToken(ctx context.Context, input ResendTokenInputDTO) error {
-	log.Println("--> Gerando um novo token")
+	log.Println("ResendTokenUseCase - Execute")
 	newToken, err := services.NewEmailService().GenerateCode()
 	if err != nil {
 		return err
 	}
-	log.Println("--> Resend token")
 	token, err := uc.userRepository.ResendToken(ctx, input.Email, newToken)
 	if err != nil {
 		return err

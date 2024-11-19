@@ -12,7 +12,7 @@ type DeleteCategoryTaskUseCase struct {
 	CategoryTaskRepository entities.CategoryTaskRepository
 }
 
-type DeleteCategoryTaskDTO struct {
+type DeleteCategoryTaskInputDTO struct {
 	UserID string `json:"user_id"`
 	ID     string `json:"id"`
 }
@@ -21,14 +21,12 @@ func NewDeleteCategoryTaskUseCase(repository entities.CategoryTaskRepository) *D
 	return &DeleteCategoryTaskUseCase{CategoryTaskRepository: repository}
 }
 
-func (useCase *DeleteCategoryTaskUseCase) Execute(ctx context.Context, input DeleteCategoryTaskDTO) error {
-	log.Println("--> DELETE CATEGORY TASK")
+func (useCase *DeleteCategoryTaskUseCase) Execute(ctx context.Context, input DeleteCategoryTaskInputDTO) error {
+	log.Println("DeleteCategoryTaskUseCase - Execute")
 	err := useCase.CategoryTaskRepository.Delete(ctx, input.UserID, input.ID)
 	if err != nil {
-		log.Println("Erro ao deletar categoria de tarefa")
 		return errors.New("erro ao deletar categoria de tarefa")
 	}
 
-	log.Println("<-Categoria de tarefa deletada com sucesso")
 	return nil
 }

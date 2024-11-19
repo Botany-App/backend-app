@@ -25,8 +25,8 @@ type UserRepository interface {
 	ResendToken(ctx context.Context, email string, token string) (string, error)
 	ActivateAccount(ctx context.Context, email, token string) error
 	Login(ctx context.Context, email, password string) (string, error)
-	GetByID(ctx context.Context, id string) (*User, error)
-	GetByEmail(ctx context.Context, email string) (*User, error)
+	FindByID(ctx context.Context, id string) (*User, error)
+	FindByEmail(ctx context.Context, email string) (*User, error)
 	UpdatePassword(ctx context.Context, ID uuid.UUID, password string) error
 	StoreRevokedTokenPassword(ctx context.Context, token string) error
 	IsTokenRevokedPassword(ctx context.Context, token string) bool
