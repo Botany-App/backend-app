@@ -2,6 +2,7 @@ package routes
 
 import (
 	"database/sql"
+	"net/http"
 
 	"github.com/go-chi/chi"
 	"github.com/go-redis/redis/v8"
@@ -97,10 +98,17 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		UpdateCategoryPlantRoutes,
 		DeleteCategoryPlantRoutes,
 	)
-
+	middleware.InitPrometheus()
 	r := chi.NewRouter()
 
 	r.Use(middleware.ApiKeyMiddleware)
+	r.Use(middleware.RateLimitMiddleware(clientRedis))
+	r.Use(middleware.RetryMiddleware(3, 2))
+
+	r.Get("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		middleware.PrometheusHandler().ServeHTTP(w, r)
+	})
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/register", userHandlers.RegisterUserHandler)
 		r.Post("/register/confirm", userHandlers.ConfirmEmailHandler)

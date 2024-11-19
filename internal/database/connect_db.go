@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/golang-migrate/migrate/v4"
@@ -39,8 +40,10 @@ func ConnectPG() (*sql.DB, error) {
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(time.Hour)
 
-	// Verificando a conexão com o banco de dados
 	if err = db.Ping(); err != nil {
 		log.Fatalf("Failed to ping the database: %v\n", err)
 	}
