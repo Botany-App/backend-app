@@ -99,6 +99,8 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 	)
 
 	r := chi.NewRouter()
+
+	r.Use(middleware.ApiKeyMiddleware)
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/register", userHandlers.RegisterUserHandler)
 		r.Post("/register/confirm", userHandlers.ConfirmEmailHandler)
@@ -108,7 +110,6 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Post("/password-reset", userHandlers.ResetPasswordUserHandler)
 	})
 
-	// Rotas protegidas por autenticação
 	r.Route("/api/v1/user", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware(jwtService))
 		r.Get("/", userHandlers.GetByIdUserHandler)
