@@ -14,6 +14,8 @@ type UpdateCategoryTaskInputDTO struct {
 	UserID      string `json:"user_id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	LIMIT       int    `json:"limit"`
+	OFFSET      int    `json:"offset"`
 }
 
 type UpdateCategoryTaskUseCase struct {
@@ -26,7 +28,13 @@ func NewUpdateCategoryTaskUseCase(repository entities.CategoryTaskRepository) *U
 
 func (uc *UpdateCategoryTaskUseCase) Execute(ctx context.Context, input UpdateCategoryTaskInputDTO) error {
 	log.Println("UpdateCategoryTaskUseCase - Execute")
-	category, err := uc.CategoryTaskRepository.FindByID(ctx, input.UserID, input.ID)
+	if input.LIMIT <= 0 {
+		input.LIMIT = 10 // Default limit
+	}
+	if input.OFFSET < 0 {
+		input.OFFSET = 0
+	}
+	category, err := uc.CategoryTaskRepository.FindByID(ctx, input.UserID, input.ID, input.LIMIT, input.OFFSET)
 	if err != nil {
 		if err.Error() == "categoria de tarefa não encontrada" || err == nil {
 			return errors.New("categoria de tarefa não encontrada")

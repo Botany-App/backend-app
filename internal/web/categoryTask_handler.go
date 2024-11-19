@@ -92,7 +92,8 @@ func (h *CategoryTaskHandler) FindByNameCategoryTaskHandler(w http.ResponseWrite
 		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
-
+	limit := utils.ParseQueryInt(r.URL.Query().Get("limit"), 10) // Default limit = 10
+	offset := utils.ParseQueryInt(r.URL.Query().Get("offset"), 0)
 	var categoryTask usecases_categorytask.FindByNameCategoryTaskInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&categoryTask); err != nil {
 		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
@@ -100,7 +101,8 @@ func (h *CategoryTaskHandler) FindByNameCategoryTaskHandler(w http.ResponseWrite
 	}
 
 	categoryTask.UserID = userID
-
+	categoryTask.LIMIT = limit
+	categoryTask.OFFSET = offset
 	categoryTasks, err := h.FindByNameCategoryTaskUseCase.Execute(context.Background(), categoryTask)
 	if err != nil {
 		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
@@ -141,7 +143,8 @@ func (h *CategoryTaskHandler) FindByIdCategoryTaskHandler(w http.ResponseWriter,
 		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
-
+	limit := utils.ParseQueryInt(r.URL.Query().Get("limit"), 10) // Default limit = 10
+	offset := utils.ParseQueryInt(r.URL.Query().Get("offset"), 0)
 	var categoryTask usecases_categorytask.FindByIdCategoryTaskInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&categoryTask); err != nil {
 		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
@@ -149,7 +152,8 @@ func (h *CategoryTaskHandler) FindByIdCategoryTaskHandler(w http.ResponseWriter,
 	}
 
 	categoryTask.UserID = userID
-
+	categoryTask.LIMIT = limit
+	categoryTask.OFFSET = offset
 	categoryTaskFound, err := h.FindByIdCategoryTaskUseCase.Execute(context.Background(), categoryTask)
 	if err != nil {
 		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
@@ -166,9 +170,12 @@ func (h *CategoryTaskHandler) FindAllCategoryTaskHandler(w http.ResponseWriter, 
 		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
-
+	limit := utils.ParseQueryInt(r.URL.Query().Get("limit"), 10) // Default limit = 10
+	offset := utils.ParseQueryInt(r.URL.Query().Get("offset"), 0)
 	var categoryTask usecases_categorytask.FindAllCategoryTaskInputDTO
 	categoryTask.UserID = userID
+	categoryTask.LIMIT = limit
+	categoryTask.OFFSET = offset
 	categoryTasks, err := h.FindAllCategoryTaskUseCase.Execute(context.Background(), categoryTask)
 	if err != nil {
 		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)

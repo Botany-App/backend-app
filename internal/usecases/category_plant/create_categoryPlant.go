@@ -13,6 +13,8 @@ type CreateCategoryPlantInputDTO struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	UserID      string `json:"user_id"`
+	LIMIT       int    `json:"limit"`
+	OFFSET      int    `json:"offset"`
 }
 
 type CreateCategoryPlantUseCase struct {
@@ -29,11 +31,17 @@ func (uc *CreateCategoryPlantUseCase) Execute(ctx context.Context, input CreateC
 	if err != nil {
 		return errors.New("error parsing user id")
 	}
+	if input.LIMIT <= 0 {
+		input.LIMIT = 10 // Default limit
+	}
+	if input.OFFSET < 0 {
+		input.OFFSET = 0
+	}
 	category, err := entities.NewCategoryPlant(input.Name, input.Description, userID)
 	if err != nil {
 		return errors.New("error creating category plant")
 	}
-	categoryPlantExists, _ := uc.CreateCategoryPlant.FindByName(ctx, userID, category.Name)
+	categoryPlantExists, _ := uc.CreateCategoryPlant.FindByName(ctx, userID, category.Name, input.LIMIT, input.OFFSET)
 	if categoryPlantExists != nil {
 		return errors.New("category plant already exists")
 	}

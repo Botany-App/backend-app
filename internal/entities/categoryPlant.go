@@ -19,9 +19,9 @@ type CategoryPlant struct {
 
 type CategoryPlantRepository interface {
 	Create(ctx context.Context, categoryPlant *CategoryPlant) error
-	FindAll(ctx context.Context, userID uuid.UUID) ([]*CategoryPlant, error)
-	FindByID(ctx context.Context, userID, id uuid.UUID) (*CategoryPlant, error)
-	FindByName(ctx context.Context, userID uuid.UUID, name string) ([]*CategoryPlant, error)
+	FindAll(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*CategoryPlant, error)
+	FindByID(ctx context.Context, userID, id uuid.UUID, limit, offset int) (*CategoryPlant, error)
+	FindByName(ctx context.Context, userID uuid.UUID, name string, limit, offset int) ([]*CategoryPlant, error)
 	Update(ctx context.Context, categoryPlant *CategoryPlant) error
 	Delete(ctx context.Context, userID, id uuid.UUID) error
 }

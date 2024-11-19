@@ -32,12 +32,12 @@ func (r *CategoryPlantRepositoryImpl) Create(ctx context.Context, category *enti
 	return nil
 }
 
-func (r *CategoryPlantRepositoryImpl) FindAll(ctx context.Context, userID uuid.UUID) ([]*entities.CategoryPlant, error) {
+func (r *CategoryPlantRepositoryImpl) FindAll(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*entities.CategoryPlant, error) {
 	cacheKey := fmt.Sprintf("categories_plant_user_%s", userID)
 
 	fetchFromDB := func() ([]*entities.CategoryPlant, error) {
-		query := `SELECT ID, name_category, description_category, created_at, updated_at FROM categories_plants WHERE user_id = $1`
-		rows, err := r.DB.Query(query, userID)
+		query := `SELECT ID, name_category, description_category, created_at, updated_at FROM categories_plants WHERE user_id = $1 LIMIT $2 OFFSET $3`
+		rows, err := r.DB.Query(query, userID, limit, offset)
 		if err != nil {
 			return nil, err
 		}
@@ -69,12 +69,12 @@ func (r *CategoryPlantRepositoryImpl) FindAll(ctx context.Context, userID uuid.U
 	return categoriesResult, nil
 }
 
-func (r *CategoryPlantRepositoryImpl) FindByID(ctx context.Context, userID, id uuid.UUID) (*entities.CategoryPlant, error) {
+func (r *CategoryPlantRepositoryImpl) FindByID(ctx context.Context, userID, id uuid.UUID, limit, offset int) (*entities.CategoryPlant, error) {
 	cacheKey := fmt.Sprintf("categories_plant_user_%s_id_%s", userID, id)
 
 	fetchFromDB := func() (*entities.CategoryPlant, error) {
-		query := `SELECT ID, name_category, description_category, created_at, updated_at FROM categories_plants WHERE user_id = $1 AND ID = $2`
-		row := r.DB.QueryRow(query, userID, id)
+		query := `SELECT ID, name_category, description_category, created_at, updated_at FROM categories_plants WHERE user_id = $1 AND ID = $2 LIMIT $3 OFFSET $4`
+		row := r.DB.QueryRow(query, userID, id, limit, offset)
 
 		var category entities.CategoryPlant
 		err := row.Scan(&category.ID, &category.Name, &category.Description, &category.CreatedAt, &category.UpdatedAt)
@@ -95,7 +95,7 @@ func (r *CategoryPlantRepositoryImpl) FindByID(ctx context.Context, userID, id u
 	return categoryResult, nil
 }
 
-func (r *CategoryPlantRepositoryImpl) FindByName(ctx context.Context, userID uuid.UUID, name string) ([]*entities.CategoryPlant, error) {
+func (r *CategoryPlantRepositoryImpl) FindByName(ctx context.Context, userID uuid.UUID, name string, limit, offset int) ([]*entities.CategoryPlant, error) {
 	cacheKey := fmt.Sprintf("categories_plant_user_%s_name_%s", userID, name)
 
 	fetchFromDB := func() ([]*entities.CategoryPlant, error) {
@@ -138,7 +138,7 @@ func (r *CategoryPlantRepositoryImpl) FindByName(ctx context.Context, userID uui
 }
 
 func (r *CategoryPlantRepositoryImpl) Update(ctx context.Context, category *entities.CategoryPlant) error {
-	query := `UPDATE categories_plants SET name_category = $1, description_category = $2, WHERE ID = $3 AND user_id = $4`
+	query := `UPDATE categories_plants SET name_category = $1, description_category = $2 WHERE ID = $3 AND user_id = $4`
 	_, err := r.DB.Exec(query, category.Name, category.Description, category.ID, category.UserID)
 	if err != nil {
 		return errors.New("error updating category plant")

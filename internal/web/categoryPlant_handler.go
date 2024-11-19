@@ -69,6 +69,8 @@ func (h *CategoryPlantHandler) FindAllCategoryPlantHandler(w http.ResponseWriter
 		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
+	limit := utils.ParseQueryInt(r.URL.Query().Get("limit"), 10) // Default limit = 10
+	offset := utils.ParseQueryInt(r.URL.Query().Get("offset"), 0)
 
 	var categoryPlant usecases_categoryplant.FindAllCategoryPlantInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&categoryPlant); err != nil {
@@ -77,6 +79,8 @@ func (h *CategoryPlantHandler) FindAllCategoryPlantHandler(w http.ResponseWriter
 		return
 	}
 	categoryPlant.UserID = userID
+	categoryPlant.LIMIT = limit
+	categoryPlant.OFFSET = offset
 	categoryPlants, err := h.FindAllCategoryPlantUseCase.Execute(context.Background(), categoryPlant)
 	if err != nil {
 		log.Print(err)
@@ -94,7 +98,8 @@ func (h *CategoryPlantHandler) FindByIdCategoryPlantHandler(w http.ResponseWrite
 		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
-
+	limit := utils.ParseQueryInt(r.URL.Query().Get("limit"), 10) // Default limit = 10
+	offset := utils.ParseQueryInt(r.URL.Query().Get("offset"), 0)
 	var categoryPlant usecases_categoryplant.FindByIdCategoryPlantInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&categoryPlant); err != nil {
 		log.Println(err)
@@ -102,6 +107,8 @@ func (h *CategoryPlantHandler) FindByIdCategoryPlantHandler(w http.ResponseWrite
 		return
 	}
 	categoryPlant.UserID = userID
+	categoryPlant.LIMIT = limit
+	categoryPlant.OFFSET = offset
 	categoryPlantFound, err := h.FindByIdCategoryPlantUseCase.Execute(context.Background(), categoryPlant)
 	if err != nil {
 		log.Print(err)
@@ -119,13 +126,16 @@ func (h *CategoryPlantHandler) FindByNameCategoryPlantHandler(w http.ResponseWri
 		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
-
+	limit := utils.ParseQueryInt(r.URL.Query().Get("limit"), 10) // Default limit = 10
+	offset := utils.ParseQueryInt(r.URL.Query().Get("offset"), 0)
 	var categoryPlant usecases_categoryplant.FindByNameCategoryPlantInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&categoryPlant); err != nil {
 		log.Println(err)
 		utils.JsonResponse(w, http.StatusBadRequest, "error", err.Error(), nil)
 		return
 	}
+	categoryPlant.LIMIT = limit
+	categoryPlant.OFFSET = offset
 	categoryPlant.UserID = userID
 	categoryPlantFound, err := h.FindByNameCategoryPlantUseCase.Execute(context.Background(), categoryPlant)
 	if err != nil {

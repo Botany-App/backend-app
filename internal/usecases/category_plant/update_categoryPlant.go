@@ -18,6 +18,8 @@ type UpdateCategoryPlantInputDTO struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	UserID      string `json:"user_id"`
+	LIMIT       int    `json:"limit"`
+	OFFSET      int    `json:"offset"`
 }
 
 func NewUpdateCategoryPlantUseCase(repository entities.CategoryPlantRepository) *UpdateCategoryPlantUseCase {
@@ -35,7 +37,13 @@ func (uc *UpdateCategoryPlantUseCase) Execute(ctx context.Context, input UpdateC
 		return errors.New("invalid id")
 	}
 
-	categoryPlant, err := uc.UpdateCategoryPlantRepository.FindByID(ctx, userID, id)
+	if input.LIMIT <= 0 {
+		input.LIMIT = 10 // Default limit
+	}
+	if input.OFFSET < 0 {
+		input.OFFSET = 0
+	}
+	categoryPlant, err := uc.UpdateCategoryPlantRepository.FindByID(ctx, userID, id, input.LIMIT, input.OFFSET)
 	if err != nil {
 		return errors.New("category plant not found")
 	}

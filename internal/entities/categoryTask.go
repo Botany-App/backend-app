@@ -18,9 +18,9 @@ type CategoryTask struct {
 }
 
 type CategoryTaskRepository interface {
-	FindAll(ctx context.Context, userID string) ([]*CategoryTask, error)
-	FindByName(ctx context.Context, userID, name string) ([]*CategoryTask, error)
-	FindByID(ctx context.Context, userID, id string) (*CategoryTask, error)
+	FindAll(ctx context.Context, userID string, limit, offset int) ([]*CategoryTask, error)
+	FindByName(ctx context.Context, userID, name string, limit, offset int) ([]*CategoryTask, error)
+	FindByID(ctx context.Context, userID, id string, limit, offset int) (*CategoryTask, error)
 	Create(ctx context.Context, category *CategoryTask) error
 	Update(ctx context.Context, category *CategoryTask) error
 	Delete(ctx context.Context, userID, id string) error

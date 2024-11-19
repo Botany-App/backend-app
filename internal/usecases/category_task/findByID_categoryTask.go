@@ -15,6 +15,8 @@ type FindByIdCategoryTaskUseCase struct {
 type FindByIdCategoryTaskInputDTO struct {
 	ID     string `json:"id"`
 	UserID string `json:"user_id"`
+	LIMIT  int    `json:"limit"`
+	OFFSET int    `json:"offset"`
 }
 
 func NewFindByIdCategoryTaskUseCase(categoryTaskRepository entities.CategoryTaskRepository) *FindByIdCategoryTaskUseCase {
@@ -24,7 +26,13 @@ func NewFindByIdCategoryTaskUseCase(categoryTaskRepository entities.CategoryTask
 }
 func (uc *FindByIdCategoryTaskUseCase) Execute(ctx context.Context, input FindByIdCategoryTaskInputDTO) (*entities.CategoryTask, error) {
 	log.Println("FindByIdCategoryTaskUseCase - Execute")
-	categoryTask, err := uc.CategoryTaskRepository.FindByID(ctx, input.UserID, input.ID)
+	if input.LIMIT <= 0 {
+		input.LIMIT = 10 // Default limit
+	}
+	if input.OFFSET < 0 {
+		input.OFFSET = 0
+	}
+	categoryTask, err := uc.CategoryTaskRepository.FindByID(ctx, input.UserID, input.ID, input.LIMIT, input.OFFSET)
 	if err != nil {
 		return nil, errors.New("categoryTask not found")
 	}

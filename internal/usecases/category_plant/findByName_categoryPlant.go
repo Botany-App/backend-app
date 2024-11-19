@@ -15,6 +15,8 @@ type FindByNameCategoryPlantUseCase struct {
 type FindByNameCategoryPlantInputDTO struct {
 	Name   string `json:"name"`
 	UserID string `json:"user_id"`
+	LIMIT  int    `json:"limit"`
+	OFFSET int    `json:"offset"`
 }
 
 func NewCategoryPlantFindByNameUseCase(repository entities.CategoryPlantRepository) *FindByNameCategoryPlantUseCase {
@@ -27,7 +29,13 @@ func (uc *FindByNameCategoryPlantUseCase) Execute(ctx context.Context, input Fin
 	if err != nil {
 		return nil, err
 	}
-	categories, err := uc.FindByNameCategoryPlantRepository.FindByName(ctx, userID, input.Name)
+	if input.LIMIT <= 0 {
+		input.LIMIT = 10 // Default limit
+	}
+	if input.OFFSET < 0 {
+		input.OFFSET = 0
+	}
+	categories, err := uc.FindByNameCategoryPlantRepository.FindByName(ctx, userID, input.Name, input.LIMIT, input.OFFSET)
 	if err != nil {
 		return nil, err
 	}

@@ -16,6 +16,8 @@ type FindByIdCategoryPlantUseCase struct {
 type FindByIdCategoryPlantInputDTO struct {
 	ID     string `json:"id"`
 	UserID string `json:"user_id"`
+	LIMIT  int    `json:"limit"`
+	OFFSET int    `json:"offset"`
 }
 
 func NewFindByIdCategoryPlantUseCase(repository entities.CategoryPlantRepository) *FindByIdCategoryPlantUseCase {
@@ -32,8 +34,13 @@ func (uc *FindByIdCategoryPlantUseCase) Execute(ctx context.Context, input FindB
 	if err != nil {
 		return nil, errors.New("UserID is not a valid UUID")
 	}
-
-	categoryPlant, err := uc.FindByIDCategoryPlantRepository.FindByID(ctx, userID, id)
+	if input.LIMIT <= 0 {
+		input.LIMIT = 10 // Default limit
+	}
+	if input.OFFSET < 0 {
+		input.OFFSET = 0
+	}
+	categoryPlant, err := uc.FindByIDCategoryPlantRepository.FindByID(ctx, userID, id, input.LIMIT, input.OFFSET)
 	if err != nil {
 		return nil, errors.New("CategoryPlant not found")
 	}

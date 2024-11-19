@@ -14,6 +14,8 @@ type FindAllCategoryPlantUseCase struct {
 
 type FindAllCategoryPlantInputDTO struct {
 	UserID string `json:"user_id"`
+	LIMIT  int    `json:"limit"`
+	OFFSET int    `json:"offset"`
 }
 
 func NewFindAllCategoryPlantUseCase(categoryPlantRepository entities.CategoryPlantRepository) *FindAllCategoryPlantUseCase {
@@ -27,8 +29,13 @@ func (uc *FindAllCategoryPlantUseCase) Execute(ctx context.Context, input FindAl
 	if err != nil {
 		return nil, err
 	}
-
-	categoryPlants, err := uc.FindAllCategoryPlantRepository.FindAll(ctx, userID)
+	if input.LIMIT <= 0 {
+		input.LIMIT = 10 // Default limit
+	}
+	if input.OFFSET < 0 {
+		input.OFFSET = 0
+	}
+	categoryPlants, err := uc.FindAllCategoryPlantRepository.FindAll(ctx, userID, input.LIMIT, input.OFFSET)
 	if err != nil {
 		return nil, err
 	}
