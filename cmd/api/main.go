@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"runtime"
@@ -26,7 +27,7 @@ func main() {
 	// Init database and redis
 	db, clientRedis, err := database.InitDB()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	// // Init user use cases
@@ -48,7 +49,7 @@ func main() {
 			http.ListenAndServe(fmt.Sprintf(":%s", local), r)
 		}
 	}()
-	fmt.Printf("Server running on port %s\n", local)
+	log.Printf("Server running on port %s\n", local)
 
 	wg.Wait()
 }

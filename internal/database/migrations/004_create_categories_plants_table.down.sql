@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS categories_plants_and_gardens;
+DROP TABLE IF EXISTS categories_plants;

@@ -36,3 +36,5 @@ CREATE TRIGGER trigger_update_timestamp_gardens
 BEFORE UPDATE ON gardens
 FOR EACH ROW
 EXECUTE FUNCTION update_timestamp();
+
+

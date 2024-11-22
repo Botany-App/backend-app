@@ -1,6 +1,6 @@
 CREATE TABLE users (
-    ID UUID PRIMARY KEY,
-    name_user VARCHAR(50) NOT NULL,
+    id UUID PRIMARY KEY,
+    user_name VARCHAR(50) NOT NULL,
     email VARCHAR(50) NOT NULL UNIQUE,
     isActive BOOLEAN DEFAULT FALSE,
     password_hash VARCHAR(100) NOT NULL,

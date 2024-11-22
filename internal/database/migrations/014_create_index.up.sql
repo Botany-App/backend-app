@@ -1,0 +1,11 @@
+CREATE INDEX idx_plants_user_id ON plants(user_id);
+CREATE INDEX idx_plants_species_id ON plants(species_id);
+CREATE INDEX idx_gardens_user_id ON gardens(user_id);
+CREATE INDEX idx_tasks_user_id ON tasks(user_id);
+CREATE INDEX idx_task_categories_category_id ON task_categories(category_id);
+CREATE INDEX idx_history_plants_record_date ON history_plants(record_date);
+CREATE INDEX idx_history_gardens_record_date ON history_gardens(record_date);
+CREATE INDEX idx_tasks_status ON tasks(task_status);
+CREATE INDEX idx_plants_health_status ON plants(health_status);
+CREATE INDEX idx_tasks_user_status ON tasks(user_id, task_status);
+CREATE INDEX idx_plants_user_health ON plants(user_id, health_status);
