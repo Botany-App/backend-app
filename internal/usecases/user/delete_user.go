@@ -8,7 +8,7 @@ import (
 )
 
 type DeleteUserInputDTO struct {
-	ID string `json:"id"`
+	Id string `json:"id"`
 }
 
 type DeleteUserUseCase struct {
@@ -23,7 +23,7 @@ func NewDeleteUserUseCase(userRepository entities.UserRepository) *DeleteUserUse
 
 func (uc *DeleteUserUseCase) Execute(ctx context.Context, input DeleteUserInputDTO) error {
 	log.Println("DeleteUserUseCase - Execute")
-	err := uc.userRepository.Delete(ctx, input.ID)
+	err := uc.userRepository.Delete(ctx, input.Id)
 	if err != nil {
 		log.Println("Erro ao deletar usuário")
 		return err

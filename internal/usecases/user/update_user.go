@@ -9,7 +9,7 @@ import (
 )
 
 type UpdateUserInputDTO struct {
-	ID    string `json:"id"`
+	Id    string `json:"id"`
 	Name  string `json:"name,omitempty"`
 	Email string `json:"email,omitempty"`
 }
@@ -24,15 +24,18 @@ func NewUpdateUserUseCase(userRepo entities.UserRepository) *UpdateUserUseCase {
 	}
 }
 
-func (uc *UpdateUserUseCase) Execute(ctx context.Context, input UpdateUserInputDTO) error {
+func (uc *UpdateUserUseCase) Execute(ctx context.Context, input UpdateUserInputDTO) (*entities.User, error) {
 	log.Println("UpdateUserUseCase - Execute")
-	user, err := uc.UserRepository.FindByID(ctx, input.ID)
+	user, err := uc.UserRepository.FindByID(ctx, input.Id)
 	if err != nil {
-		return errors.New("erro ao buscar usuário")
+		return nil, errors.New("erro ao buscar usuário")
+	}
+	if user == nil {
+		return nil, nil
 	}
 
 	if input.Name == user.Name && input.Email == user.Email {
-		return errors.New("nenhum campo foi alterado")
+		return nil, errors.New("nenhum campo foi alterado")
 	}
 	if input.Name != "" && input.Name != user.Name {
 		user.Name = input.Name
@@ -43,8 +46,11 @@ func (uc *UpdateUserUseCase) Execute(ctx context.Context, input UpdateUserInputD
 	}
 
 	if err := uc.UserRepository.Update(ctx, user); err != nil {
-		return errors.New("erro ao atualizar usuário")
+		return nil, errors.New("erro ao atualizar usuário")
 	}
-
-	return nil
+	user, err = uc.UserRepository.FindByID(ctx, input.Id)
+	if err != nil {
+		return nil, errors.New("erro ao buscar usuário")
+	}
+	return user, nil
 }

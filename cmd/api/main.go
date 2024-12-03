@@ -35,7 +35,7 @@ func main() {
 	jwtService := services.NewJWTService(secretKey)
 	r, err := routes.InitializeRoutes(db, clientRedis, jwtService)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	// Start server

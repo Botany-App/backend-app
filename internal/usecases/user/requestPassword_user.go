@@ -32,7 +32,7 @@ func (uc *RequestPasswordResetUserUseCase) Execute(ctx context.Context, input Re
 		return errors.New("usuário não encontrado")
 	}
 
-	resetToken, err := uc.JWTService.GenerateToken(user.ID)
+	resetToken, err := uc.JWTService.GenerateToken(user.Id)
 	if err != nil {
 		return errors.New("erro ao gerar token de redefinição de senha")
 	}

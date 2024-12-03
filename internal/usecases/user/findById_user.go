@@ -8,7 +8,7 @@ import (
 )
 
 type FindUserByIdInputDTO struct {
-	ID string `json:"id"`
+	Id string `json:"id"`
 }
 
 type FindUserByIdUseCase struct {
@@ -21,10 +21,14 @@ func NewFindUserByIdUseCase(userRepository entities.UserRepository) *FindUserByI
 
 func (uc *FindUserByIdUseCase) Execute(ctx context.Context, input FindUserByIdInputDTO) (*entities.User, error) {
 	log.Println("FindUserByIdUseCase - Execute")
-	user, err := uc.userRepository.FindByID(ctx, input.ID)
+	user, err := uc.userRepository.FindByID(ctx, input.Id)
 	if err != nil {
 		log.Println("Erro ao buscar usuário pelo ID")
 		return nil, err
+	}
+	if user == nil {
+		log.Println("Usuário não encontrado")
+		return nil, nil
 	}
 	return user, nil
 }

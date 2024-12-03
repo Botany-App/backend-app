@@ -11,9 +11,10 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `json:"id"`
+	Id        uuid.UUID `json:"id"`
 	Name      string    `json:"name" validate:"required"`
 	Email     string    `json:"email" validate:"required,email"`
+	IsActive  bool      `json:"is_active"`
 	Password  string    `json:"password" validate:"required"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -27,7 +28,7 @@ type UserRepository interface {
 	Login(ctx context.Context, email, password string) (string, error)
 	FindByID(ctx context.Context, id string) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
-	UpdatePassword(ctx context.Context, ID uuid.UUID, password string) error
+	UpdatePassword(ctx context.Context, id uuid.UUID, password string) error
 	StoreRevokedTokenPassword(ctx context.Context, token string) error
 	IsTokenRevokedPassword(ctx context.Context, token string) bool
 	Update(ctx context.Context, user *User) error
@@ -51,17 +52,16 @@ func NewUser(name, email, password string) (*User, error) {
 		return nil, errors.New("invalid email")
 	}
 
-	id := uuid.New()
-
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
 	return &User{
-		ID:        id,
+		Id:        uuid.New(),
 		Name:      name,
 		Email:     email,
+		IsActive:  false,
 		Password:  string(passwordHash),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),

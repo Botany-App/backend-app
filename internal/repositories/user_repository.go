@@ -27,21 +27,21 @@ func NewUserRepository(db *sql.DB, rd *redis.Client) *UserRepositoryImpl {
 
 func (r *UserRepositoryImpl) Create(ctx context.Context, user *entities.User) error {
 	_, err := r.DB.Exec(`
-		INSERT INTO users (ID, name_user, email, password_hash) 
+		INSERT INTO users (id, user_name, email, password_hash) 
 		VALUES ($1, $2, $3, $4) 
-		RETURNING id`, user.ID, user.Name, user.Email, user.Password)
+		RETURNING id`, user.Id, user.Name, user.Email, user.Password)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *UserRepositoryImpl) FindByID(ctx context.Context, ID string) (*entities.User, error) {
-	query := `SELECT ID, name_user, email, password_hash, created_at, updated_at FROM users WHERE id=$1`
+func (r *UserRepositoryImpl) FindByID(ctx context.Context, id string) (*entities.User, error) {
+	query := `SELECT id, user_name, email, isActive, password_hash, created_at, updated_at FROM users WHERE id=$1`
 
-	row := r.DB.QueryRow(query, ID)
+	row := r.DB.QueryRow(query, id)
 	user := &entities.User{}
-	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.Id, &user.Name, &user.Email, &user.IsActive, &user.Password, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -53,11 +53,11 @@ func (r *UserRepositoryImpl) FindByID(ctx context.Context, ID string) (*entities
 }
 
 func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*entities.User, error) {
-	query := `SELECT ID, name_user, email, password_hash, created_at, updated_at FROM users WHERE email=$1`
+	query := `SELECT id, user_name, email, password_hash, isActive,  created_at, updated_at FROM users WHERE email=$1`
 
 	row := r.DB.QueryRow(query, email)
 	user := &entities.User{}
-	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.Id, &user.Name, &user.Email, &user.IsActive, &user.Password, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -69,27 +69,27 @@ func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*en
 }
 
 func (r *UserRepositoryImpl) Update(ctx context.Context, user *entities.User) error {
-	query := `UPDATE users SET name_user=$1, email=$2  WHERE ID=$3`
+	query := `UPDATE users SET user_name=$1, email=$2  WHERE id=$3`
 
-	_, err := r.DB.Exec(query, user.Name, user.Email, user.ID)
+	_, err := r.DB.Exec(query, user.Name, user.Email, user.Id)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, ID uuid.UUID, password string) error {
-	query := `UPDATE users SET password_hash=$1 WHERE ID=$2`
-	_, err := r.DB.Exec(query, password, ID)
+func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, id uuid.UUID, password string) error {
+	query := `UPDATE users SET password_hash=$1 WHERE id=$2`
+	_, err := r.DB.Exec(query, password, id)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *UserRepositoryImpl) Delete(ctx context.Context, ID string) error {
-	query := `DELETE FROM users WHERE ID=$1`
-	_, err := r.DB.Exec(query, ID)
+func (r *UserRepositoryImpl) Delete(ctx context.Context, id string) error {
+	query := `DELETE FROM users WHERE id=$1`
+	_, err := r.DB.Exec(query, id)
 	if err != nil {
 		return err
 	}
@@ -169,11 +169,11 @@ func (r *UserRepositoryImpl) ActivateAccount(ctx context.Context, email, token s
 }
 
 func (r *UserRepositoryImpl) Login(ctx context.Context, email, password string) (string, error) {
-	query := `SELECT ID, password_hash, isActive FROM users WHERE email=$1`
+	query := `SELECT id, password_hash, isActive FROM users WHERE email=$1`
 	row := r.DB.QueryRow(query, email)
-	var passwordHash, ID string
+	var passwordHash, id string
 	var isActive bool
-	err := row.Scan(&ID, &passwordHash, &isActive)
+	err := row.Scan(&id, &passwordHash, &isActive)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "not found", errors.New("user not found")
@@ -189,5 +189,5 @@ func (r *UserRepositoryImpl) Login(ctx context.Context, email, password string) 
 	if err != nil {
 		return "invalid password", errors.New("invalid password")
 	}
-	return ID, nil
+	return id, nil
 }

@@ -95,9 +95,13 @@ func (h *UserHandlers) FindByIdUserHandler(w http.ResponseWriter, r *http.Reques
 		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
-	user, err := h.FindUserByIdUseCase.Execute(context.Background(), usecases.FindUserByIdInputDTO{ID: userID})
+	user, err := h.FindUserByIdUseCase.Execute(context.Background(), usecases.FindUserByIdInputDTO{Id: userID})
 	if err != nil {
 		utils.JsonResponse(w, http.StatusInternalServerError, "error", "Erro ao buscar usuário", err.Error())
+		return
+	}
+	if user == nil {
+		utils.JsonResponse(w, http.StatusNotFound, "error", "Usuário não encontrado", nil)
 		return
 	}
 	utils.JsonResponse(w, http.StatusOK, "success", "Usuário encontrado", user)
@@ -110,7 +114,7 @@ func (h *UserHandlers) DeleteUserHandler(w http.ResponseWriter, r *http.Request)
 		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
 		return
 	}
-	if err := h.DeleteUserUseCase.Execute(context.Background(), usecases.DeleteUserInputDTO{ID: userID}); err != nil {
+	if err := h.DeleteUserUseCase.Execute(context.Background(), usecases.DeleteUserInputDTO{Id: userID}); err != nil {
 		utils.JsonResponse(w, http.StatusInternalServerError, "error", "Erro ao deletar usuário", err.Error())
 		return
 	}
@@ -129,12 +133,17 @@ func (h *UserHandlers) UpdateUserHandler(w http.ResponseWriter, r *http.Request)
 		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
 		return
 	}
-	input.ID = userID
-	if err := h.UpdateUserUseCase.Execute(context.Background(), input); err != nil {
+	input.Id = userID
+	user, err := h.UpdateUserUseCase.Execute(context.Background(), input)
+	if err != nil {
 		utils.JsonResponse(w, http.StatusInternalServerError, "error", "Erro ao atualizar usuário", err.Error())
 		return
 	}
-	utils.JsonResponse(w, http.StatusOK, "success", "Usuário atualizado com sucesso", nil)
+	if user == nil {
+		utils.JsonResponse(w, http.StatusNotFound, "error", "Usuário não encontrado", nil)
+		return
+	}
+	utils.JsonResponse(w, http.StatusOK, "success", "Usuário atualizado com sucesso", user)
 }
 
 func (h *UserHandlers) RequestPasswordResetUserHandler(w http.ResponseWriter, r *http.Request) {

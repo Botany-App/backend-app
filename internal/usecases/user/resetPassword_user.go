@@ -51,7 +51,7 @@ func (uc *ResetPasswordUserUseCase) Execute(ctx context.Context, input ResetPass
 
 	user.Password = string(passwordHash)
 
-	err = uc.UserRepository.UpdatePassword(ctx, user.ID, user.Password)
+	err = uc.UserRepository.UpdatePassword(ctx, user.Id, user.Password)
 	if err != nil {
 		return errors.New("erro ao atualizar senha de usuário")
 	}
