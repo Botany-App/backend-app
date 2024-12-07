@@ -8,6 +8,7 @@ import (
 	"github.com/lucasBiazon/botany-back/internal/middleware"
 	"github.com/lucasBiazon/botany-back/internal/repositories"
 	usecases_categoryplant "github.com/lucasBiazon/botany-back/internal/usecases/category-plant"
+	usecases_specie "github.com/lucasBiazon/botany-back/internal/usecases/specie"
 	usecases "github.com/lucasBiazon/botany-back/internal/usecases/user"
 
 	services "github.com/lucasBiazon/botany-back/internal/service"
@@ -54,6 +55,18 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		UpdateCategoryPlantRoutes,
 	)
 
+	// specie Routes
+	repositorySpecies := repositories.NewSpeciesRepository(db, clientRedis)
+	FindAllSpecieRoutes := usecases_specie.NewFindAllSpecieUseCase(repositorySpecies)
+	FindByIdSpecieRoutes := usecases_specie.NewFindByIdSpecieUseCase(repositorySpecies)
+	FindByNameSpecieRoutes := usecases_specie.NewFindByNameSpecieUseCase(repositorySpecies)
+
+	specieHandlers := handlers.NewSpecieHandler(
+		FindAllSpecieRoutes,
+		FindByIdSpecieRoutes,
+		FindByNameSpecieRoutes,
+	)
+
 	// Routes
 	r := chi.NewRouter()
 	r.Use(middleware.ApiKeyMiddleware)
@@ -84,5 +97,11 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Delete("/", categoryPlantHandlers.DeleteCategoryPlantHandler)
 	})
 
+	r.Route("/api/v1/specie", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(jwtService))
+		r.Get("/", specieHandlers.FindAllSpeciesHandler)
+		r.Get("/id", specieHandlers.FindByIdSpecieHandler)
+		r.Get("/name", specieHandlers.FindByNameSpecieHandler)
+	})
 	return r, nil
 }

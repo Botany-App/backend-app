@@ -15,6 +15,7 @@ CREATE TABLE species (
     irrigation_weight NUMERIC(5, 2) NOT NULL,
     fertilization_weight NUMERIC(5, 2) NOT NULL,
     sun_weight NUMERIC(5, 2) NOT NULL,
+    image_url VARCHAR(300) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

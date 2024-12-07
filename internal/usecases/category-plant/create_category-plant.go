@@ -29,12 +29,17 @@ func (uc *CreateCategoryPlantUseCase) Execute(ctx context.Context, input CreateC
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating new category plant")
 	}
+
 	existingCategoryPlant, err := uc.categoryPlantRepository.FindByName(ctx, userId, input.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "error finding category plant by name")
 	}
-	if existingCategoryPlant != nil {
-		return nil, errors.New("category with the same name already exists")
+
+	for _, category := range existingCategoryPlant {
+		if category.Name == input.Name {
+			log.Println(category.Name)
+			return nil, errors.New("category plant already exists")
+		}
 	}
 
 	id, err := uc.categoryPlantRepository.Create(ctx, newCategoryPlant)

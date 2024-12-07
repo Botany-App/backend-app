@@ -9,6 +9,7 @@ import (
 )
 
 type UpdateCategoryPlantInputDTO struct {
+	UserId      string `json:"user_id"`
 	Id          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -24,19 +25,32 @@ func NewUpdateCategoryPlantUseCase(categoryPlantRepository entities.CategoryPlan
 	}
 }
 
-func (uc *UpdateCategoryPlantUseCase) Execute(ctx context.Context, input UpdateCategoryPlantInputDTO, userId string) (*entities.CategoryPlant, error) {
+func (uc *UpdateCategoryPlantUseCase) Execute(ctx context.Context, input UpdateCategoryPlantInputDTO) (*entities.CategoryPlant, error) {
 	log.Println("UpdateCategoryPlantUseCase - Execute")
-	category, err := uc.categoryPlantRepository.FindById(ctx, userId, input.Id)
+
+	category, err := uc.categoryPlantRepository.FindById(ctx, input.UserId, input.Id)
 	if err != nil {
 		return nil, errors.Wrap(err, "error while searching category")
 	}
 	if category == nil {
-		return nil, nil
+		return nil, errors.New("category not found")
+	}
+	existingCategoryPlant, err := uc.categoryPlantRepository.FindByName(ctx, input.UserId, input.Name)
+	if err != nil {
+		return nil, errors.Wrap(err, "error finding category plant by name")
+	}
+
+	for _, category := range existingCategoryPlant {
+		if category.Name == input.Name {
+			log.Println(category.Name)
+			return nil, errors.New("category plant already exists")
+		}
 	}
 
 	if input.Name == category.Name && input.Description == category.Description {
 		return nil, errors.New("no field was changed")
 	}
+
 	if input.Name != " " && input.Name != category.Name {
 		category.Name = input.Name
 	}
@@ -48,7 +62,7 @@ func (uc *UpdateCategoryPlantUseCase) Execute(ctx context.Context, input UpdateC
 	if err != nil {
 		return nil, errors.Wrap(err, "error while updating category")
 	}
-	categoryUpdated, err := uc.categoryPlantRepository.FindById(ctx, userId, input.Id)
+	categoryUpdated, err := uc.categoryPlantRepository.FindById(ctx, input.UserId, input.Id)
 	if err != nil {
 		return nil, errors.Wrap(err, "error while updating category")
 	}

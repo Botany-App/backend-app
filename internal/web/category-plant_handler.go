@@ -166,7 +166,8 @@ func (h *CategoryPlantHandlers) UpdateCategoryPlantHandler(w http.ResponseWriter
 		return
 	}
 
-	categoryPlant, err := h.UpdateCategoryPlantUseCase.Execute(context.Background(), input, userId)
+	input.UserId = userId
+	categoryPlant, err := h.UpdateCategoryPlantUseCase.Execute(context.Background(), input)
 	if err != nil {
 		utils.JsonResponse(w, http.StatusInternalServerError, "error", "Erro ao atualizar categoria de planta", err.Error())
 		return

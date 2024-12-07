@@ -166,10 +166,10 @@ func (e *EmailServiceImpl) SendEmailResetPassword(inputEmail, code string) error
 	dialer := gomail.NewDialer("smtp.gmail.com", 587, os.Getenv("EMAIL_USER"), os.Getenv("EMAIL_PASSWORD"))
 
 	if err := dialer.DialAndSend(message); err != nil {
-		fmt.Println("Error:", err)
+		log.Println("Error:", err)
 		return err
 	} else {
-		fmt.Println("HTML Email sent successfully with a plain-text alternative!")
+		log.Println("HTML Email sent successfully with a plain-text alternative!")
 	}
 	return nil
 }

@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -37,6 +39,17 @@ func (r *CategoryPlantRepositoryImpl) Create(ctx context.Context, categoryPlant 
 	}
 
 	_, err = r.DB.ExecContext(ctx, query, idParsed, categoryPlant.Name, categoryPlant.Description, userIdParsed)
+	if err != nil {
+		return "", err
+	}
+
+	key := "categories_plants:" + categoryPlant.UserId
+	categoryData, err := json.Marshal(categoryPlant)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = r.RD.HSet(ctx, key, categoryPlant.Id, categoryData).Result()
 	if err != nil {
 		return "", err
 	}
@@ -111,7 +124,7 @@ func (r *CategoryPlantRepositoryImpl) CacheAllCategories(ctx context.Context, us
 		return err
 	}
 
-	return r.RD.Expire(ctx, key, 10*time.Minute).Err() // Configura TTL
+	return r.RD.Expire(ctx, key, 20*time.Minute).Err() // Configura TTL
 }
 
 func (r *CategoryPlantRepositoryImpl) FindAll(ctx context.Context, userId string) ([]*entities.CategoryPlant, error) {
@@ -136,6 +149,7 @@ func (r *CategoryPlantRepositoryImpl) FindAll(ctx context.Context, userId string
 
 	return categories, nil
 }
+
 func (r *CategoryPlantRepositoryImpl) FindByNamePG(ctx context.Context, userId, name string) ([]*entities.CategoryPlant, error) {
 	query := `SELECT id, category_name, category_description, user_id, created_at, updated_at 
 	          FROM categories_plants WHERE user_id = $1 AND category_name ILIKE $2`
@@ -191,9 +205,9 @@ func (r *CategoryPlantRepositoryImpl) FindByNameRD(ctx context.Context, userId, 
 	return categories, nil
 }
 
-func (r *CategoryPlantRepositoryImpl) SetCategoryByNameRD(ctx context.Context, userId, name string, categories []*entities.CategoryPlant) error {
+func (r *CategoryPlantRepositoryImpl) SetCategoryByNameRD(ctx context.Context, userId string, categories []*entities.CategoryPlant) error {
 	for _, category := range categories {
-		key := "categories_plants:" + userId + ":" + name + ":" + category.Id
+		key := "categories_plants:" + userId + ":" + category.Name + ":" + category.Id
 
 		categoryJSON, err := json.Marshal(category)
 		if err != nil {
@@ -211,36 +225,49 @@ func (r *CategoryPlantRepositoryImpl) SetCategoryByNameRD(ctx context.Context, u
 
 func (r *CategoryPlantRepositoryImpl) FindByName(ctx context.Context, userId, name string) ([]*entities.CategoryPlant, error) {
 	// Tenta buscar no Redis primeiro
-	category, err := r.FindByNameRD(ctx, userId, name)
+	categories, err := r.FindByNameRD(ctx, userId, name)
 	if err != nil {
 		return nil, err
 	}
 
-	if category == nil { // Cache miss, busca no PostgreSQL
-		category, err = r.FindByNamePG(ctx, userId, name)
+	if len(categories) == 0 { // Cache miss, busca no PostgreSQL
+		categories, err = r.FindByNamePG(ctx, userId, name)
 		if err != nil {
 			return nil, err
 		}
 
-		if category != nil { // Atualiza o cache
-			err = r.SetCategoryByNameRD(ctx, userId, name, category)
+		if len(categories) > 0 { // Atualiza o cache se houver resultados
+			err = r.SetCategoryByNameRD(ctx, userId, categories)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	return category, nil
+	return categories, nil
 }
 
 func (r *CategoryPlantRepositoryImpl) FindByIDPG(ctx context.Context, userId, id string) (*entities.CategoryPlant, error) {
 	query := `
-			SELECT id, category_name, category_description, user_id, created_at, updated_at
-			FROM categories_plants
-			WHERE id = $1 AND user_id = $2
+		SELECT id, category_name, category_description, user_id, created_at, updated_at
+		FROM categories_plants
+		WHERE id = $1 AND user_id = $2
 	`
-	row := r.DB.QueryRowContext(ctx, query, id, userId)
 
+	// Parse dos IDs para UUID
+	userUUID, err := uuid.Parse(userId)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao converter userId para UUID: %w", err)
+	}
+	idUUID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao converter id para UUID: %w", err)
+	}
+
+	// Executa a consulta
+	row := r.DB.QueryRowContext(ctx, query, idUUID, userUUID)
+
+	// Mapeia os resultados para a entidade
 	var category entities.CategoryPlant
 	if err := row.Scan(
 		&category.Id,
@@ -253,48 +280,53 @@ func (r *CategoryPlantRepositoryImpl) FindByIDPG(ctx context.Context, userId, id
 		if err == sql.ErrNoRows {
 			return nil, nil // Nenhum registro encontrado
 		}
-		return nil, err
+		return nil, fmt.Errorf("erro ao escanear categoria: %w", err)
 	}
 
 	return &category, nil
 }
 
 func (r *CategoryPlantRepositoryImpl) FindByIDRD(ctx context.Context, userId, id string) (*entities.CategoryPlant, error) {
-	key := "categories_plants:" + userId + ":" + id // Chave com id
+	// Define a chave para busca no Redis
+	key := "categories_plants:" + userId + ":" + id
 
+	// Tenta recuperar os dados do Redis
 	categoryJSON, err := r.RD.Get(ctx, key).Result()
 	if err == redis.Nil {
 		return nil, nil // Cache miss
 	} else if err != nil {
-		return nil, err // Outros erros do Redis
+		return nil, fmt.Errorf("erro ao buscar categoria no Redis: %w", err)
 	}
 
+	// Desserializa o JSON para a entidade
 	var category entities.CategoryPlant
 	if err := json.Unmarshal([]byte(categoryJSON), &category); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("erro ao desserializar categoria: %w", err)
 	}
 
 	return &category, nil
 }
 
 func (r *CategoryPlantRepositoryImpl) SetCategoryByIDRD(ctx context.Context, userId, id string, category *entities.CategoryPlant) error {
+	// Define a chave e serializa a entidade para JSON
 	key := "categories_plants:" + userId + ":" + id
 
 	categoryJSON, err := json.Marshal(category)
 	if err != nil {
-		return err
+		return fmt.Errorf("erro ao serializar categoria: %w", err)
 	}
 
+	// Armazena no Redis com TTL
 	err = r.RD.Set(ctx, key, categoryJSON, 10*time.Minute).Err()
 	if err != nil {
-		return err
+		return fmt.Errorf("erro ao salvar categoria no Redis: %w", err)
 	}
 
 	return nil
 }
 
 func (r *CategoryPlantRepositoryImpl) FindById(ctx context.Context, userId, id string) (*entities.CategoryPlant, error) {
-	// Tenta buscar no Redis primeiro
+	// Tenta buscar no cache do Redis
 	category, err := r.FindByIDRD(ctx, userId, id)
 	if err != nil {
 		return nil, err
@@ -306,10 +338,10 @@ func (r *CategoryPlantRepositoryImpl) FindById(ctx context.Context, userId, id s
 			return nil, err
 		}
 
-		if category != nil { // Atualiza o cache
-			err = r.SetCategoryByIDRD(ctx, userId, id, category)
-			if err != nil {
-				return nil, err
+		if category != nil {
+			// Atualiza o cache com a entidade encontrada
+			if err := r.SetCategoryByIDRD(ctx, userId, id, category); err != nil {
+				log.Printf("Erro ao atualizar cache para a categoria ID %s: %v", id, err)
 			}
 		}
 	}
@@ -319,38 +351,35 @@ func (r *CategoryPlantRepositoryImpl) FindById(ctx context.Context, userId, id s
 
 func (r *CategoryPlantRepositoryImpl) UpdateCategoryPG(ctx context.Context, category *entities.CategoryPlant) error {
 	query := `
-			UPDATE categories_plants
-			SET category_name = $1,
-					category_description = $2,
-					updated_at = $3
-			WHERE id = $4 AND user_id = $5
+		UPDATE categories_plants
+		SET category_name = $1,
+			category_description = $2
+		WHERE id = $3 AND user_id = $4
 	`
 	_, err := r.DB.ExecContext(ctx, query,
 		category.Name,
 		category.Description,
-		time.Now(),
 		category.Id,
 		category.UserId,
 	)
-	return err
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar categoria no PostgreSQL: %w", err)
+	}
+
+	return nil
 }
 
 func (r *CategoryPlantRepositoryImpl) UpdateCategoryCache(ctx context.Context, category *entities.CategoryPlant) error {
-	// Atualiza as chaves Redis para ID e nome
-	keyByID := "categories_plants:" + category.UserId + ":" + category.Id
-	keyByName := "categories_plants:" + category.UserId + ":" + category.Name
+	keyById := "categories_plants:" + category.UserId + ":" + category.Id
+	keyByName := "categories_plants:" + category.UserId + ":" + category.Name + ":" + category.Id
+	keyAllCategories := "categories_plants:" + category.UserId
 
-	categoryJSON, err := json.Marshal(category)
-	if err != nil {
-		return err
+	// Remove os caches relacionados
+	if err := r.RD.Del(ctx, keyById, keyByName).Err(); err != nil {
+		return fmt.Errorf("erro ao remover cache por ID e Nome: %w", err)
 	}
-
-	// Atualiza as duas chaves no Redis
-	if err := r.RD.Set(ctx, keyByID, categoryJSON, 10*time.Minute).Err(); err != nil {
-		return err
-	}
-	if err := r.RD.Set(ctx, keyByName, categoryJSON, 10*time.Minute).Err(); err != nil {
-		return err
+	if err := r.RD.HDel(ctx, keyAllCategories, category.Id).Err(); err != nil {
+		return fmt.Errorf("erro ao remover cache de categorias gerais: %w", err)
 	}
 
 	return nil
@@ -362,9 +391,9 @@ func (r *CategoryPlantRepositoryImpl) Update(ctx context.Context, category *enti
 		return err
 	}
 
-	// Atualiza o cache no Redis
+	// Atualiza/remova o cache correspondente
 	if err := r.UpdateCategoryCache(ctx, category); err != nil {
-		return err
+		log.Printf("erro ao atualizar cache da categoria %s: %v", category.Id, err)
 	}
 
 	return nil
@@ -372,47 +401,51 @@ func (r *CategoryPlantRepositoryImpl) Update(ctx context.Context, category *enti
 
 func (r *CategoryPlantRepositoryImpl) DeleteCategoryPG(ctx context.Context, userId, id string) error {
 	query := `
-			DELETE FROM categories_plants
-			WHERE id = $1 AND user_id = $2
+		DELETE FROM categories_plants
+		WHERE id = $1 AND user_id = $2
 	`
 	_, err := r.DB.ExecContext(ctx, query, id, userId)
-	return err
+	if err != nil {
+		return fmt.Errorf("erro ao deletar categoria no PostgreSQL: %w", err)
+	}
+
+	return nil
 }
 
 func (r *CategoryPlantRepositoryImpl) DeleteCategoryCache(ctx context.Context, userId, id, name string) error {
 	keyByID := "categories_plants:" + userId + ":" + id
 	keyByName := "categories_plants:" + userId + ":" + name + ":" + id
-
-	if err := r.RD.Del(ctx, keyByID).Err(); err != nil {
-		return err
-	}
-	if err := r.RD.Del(ctx, keyByName).Err(); err != nil {
-		return err
-	}
-
 	keyAllCategories := "categories_plants:" + userId
+
+	// Remove os caches relacionados
+	if err := r.RD.Del(ctx, keyByID, keyByName).Err(); err != nil {
+		return fmt.Errorf("erro ao remover cache por ID e Nome: %w", err)
+	}
 	if err := r.RD.HDel(ctx, keyAllCategories, id).Err(); err != nil {
-		return err
+		return fmt.Errorf("erro ao remover cache de categorias gerais: %w", err)
 	}
 
 	return nil
 }
 
 func (r *CategoryPlantRepositoryImpl) Delete(ctx context.Context, userId, id string) error {
+	// Verifica se a categoria existe
 	category, err := r.FindByIDPG(ctx, userId, id)
 	if err != nil {
 		return err
 	}
 	if category == nil {
-		return errors.New("category not found")
+		return errors.New("categoria não encontrada")
 	}
 
+	// Deleta no PostgreSQL
 	if err := r.DeleteCategoryPG(ctx, userId, id); err != nil {
 		return err
 	}
 
+	// Remove os caches relacionados
 	if err := r.DeleteCategoryCache(ctx, userId, id, category.Name); err != nil {
-		return err
+		log.Printf("erro ao remover cache da categoria %s: %v", id, err)
 	}
 
 	return nil
