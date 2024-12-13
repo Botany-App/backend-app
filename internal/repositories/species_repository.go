@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"github.com/lucasBiazon/botany-back/internal/entities"
 )
 
@@ -106,10 +107,14 @@ func (r *SpeciesRepositoryImpl) FindAll(ctx context.Context) ([]*entities.Specie
 }
 
 func (r *SpeciesRepositoryImpl) FindByIDPG(ctx context.Context, id string) (*entities.Specie, error) {
+	idParse, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
 	query := `SELECT * FROM species WHERE id = $1`
-	row := r.DB.QueryRowContext(ctx, query, id)
+	row := r.DB.QueryRowContext(ctx, query, idParse)
 	var specie entities.Specie
-	err := row.Scan(&specie.ID, &specie.CommonName,
+	err = row.Scan(&specie.ID, &specie.CommonName,
 		&specie.SpecieDescription, &specie.ScientificName, &specie.BotanicalFamily, &specie.GrowthType,
 		&specie.IdealTemperature, &specie.IdealClimate, &specie.LifeCycle,
 		&specie.PlantingSeason, &specie.HarvestTime, &specie.AverageHeight,

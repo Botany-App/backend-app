@@ -8,6 +8,7 @@ import (
 	"github.com/lucasBiazon/botany-back/internal/middleware"
 	"github.com/lucasBiazon/botany-back/internal/repositories"
 	usecases_categoryplant "github.com/lucasBiazon/botany-back/internal/usecases/category-plant"
+	usecases_plant "github.com/lucasBiazon/botany-back/internal/usecases/plant"
 	usecases_specie "github.com/lucasBiazon/botany-back/internal/usecases/specie"
 	usecases "github.com/lucasBiazon/botany-back/internal/usecases/user"
 
@@ -67,6 +68,28 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		FindByNameSpecieRoutes,
 	)
 
+	repositoryPlant := repositories.NewPlantRepositoryImpl(db, clientRedis)
+	CreatePlantRoute := usecases_plant.NewCreatePlantUseCase(repositoryPlant, repositorySpecies)
+	DeletePlantRoute := usecases_plant.NewDeletePlantUseCase(repositoryPlant, repositorySpecies)
+	FindAllPlantRoute := usecases_plant.NewFindAllPlantUseCase(repositoryPlant)
+	FindByCategoryNamePlantRoute := usecases_plant.NewFindByCategoryNamePlantUseCase(repositoryPlant)
+	FindByIdPlantRoute := usecases_plant.NewFindByIdPlantUseCase(repositoryPlant)
+	FindByNameCategoryPlantRoute := usecases_plant.NewFindByNameCategoryPlantUseCase(repositoryPlant)
+	FindBySpecieNamePlantRoute := usecases_plant.NewFindBySpecieNamePlantUseCase(repositoryPlant)
+	UpdatePlantRoute := usecases_plant.NewUpdatePlantUseCase(repositoryPlant)
+
+	plantHandlers := handlers.NewPlantHandler(
+		CreatePlantRoute,
+		DeletePlantRoute,
+		FindAllPlantRoute,
+		FindByCategoryNamePlantRoute,
+		FindByIdPlantRoute,
+		FindByNameCategoryPlantRoute,
+		FindBySpecieNamePlantRoute,
+		UpdatePlantRoute,
+		FindByIdSpecieRoutes,
+	)
+
 	// Routes
 	r := chi.NewRouter()
 	r.Use(middleware.ApiKeyMiddleware)
@@ -103,5 +126,18 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Get("/id", specieHandlers.FindByIdSpecieHandler)
 		r.Get("/name", specieHandlers.FindByNameSpecieHandler)
 	})
+
+	r.Route("/api/v1/plant", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(jwtService))
+		r.Post("/", plantHandlers.CreatePlantHandler)
+		r.Delete("/", plantHandlers.DeletePlantHandler)
+		r.Get("/", plantHandlers.FindAllPlantHandler)
+		r.Get("/category-name", plantHandlers.FindByCategoryNamePlantHandler)
+		r.Get("/id", plantHandlers.FindByIdPlantHandler)
+		r.Get("/specie-plant-name", plantHandlers.FindBySpecieNamePlantHandler)
+		r.Get("/name", plantHandlers.FindByNamePlantHandler)
+		r.Put("/", plantHandlers.UpdatePlantHandler)
+	})
+
 	return r, nil
 }

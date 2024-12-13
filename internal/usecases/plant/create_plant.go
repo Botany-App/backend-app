@@ -9,7 +9,8 @@ import (
 )
 
 type CreatePlantUseCase struct {
-	PlantRepository entities.PlantRepository
+	PlantRepository  entities.PlantRepository
+	SpecieRepository entities.SpecieRepository
 }
 
 type CreatePlantUseCaseInputDTO struct {
@@ -29,30 +30,52 @@ type CreatePlantUseCaseInputDTO struct {
 	UserID               string    `json:"user_id"`
 	SpeciesID            string    `json:"species_id"`
 	CategoriesPlant      []string  `json:"categories_plant"`
+	SpecieHaverstTime    int       `json:"specie_harvest_time"`
 }
 
-func NewCreatePlantUseCase(plantRepository entities.PlantRepository) *CreatePlantUseCase {
+func NewCreatePlantUseCase(plantRepository entities.PlantRepository, specieRepository entities.SpecieRepository) *CreatePlantUseCase {
 	return &CreatePlantUseCase{
-		PlantRepository: plantRepository,
+		PlantRepository:  plantRepository,
+		SpecieRepository: specieRepository,
 	}
 }
 
-func (uc *CreatePlantUseCase) Execute(ctx context.Context, input CreatePlantUseCaseInputDTO) (*entities.Plant, error) {
+func CalculateEstimatedHarvestDate(plantingDate, estimatedHarvestDate time.Time, harvestTime int) time.Time {
+	// Se a data estimada de colheita já existir, ajusta com base no HarvestTime
+	if !estimatedHarvestDate.IsZero() {
+		return estimatedHarvestDate.AddDate(0, 0, harvestTime)
+	}
+	// Caso contrário, calcula a partir da data de plantio
+	return plantingDate.AddDate(0, 0, harvestTime)
+}
+
+func (uc *CreatePlantUseCase) Execute(ctx context.Context, input CreatePlantUseCaseInputDTO) (*entities.PlantWithCategory, error) {
 	log.Println("CreatePlantUseCase - Execute")
-	newPlant, err := entities.NewPlant(input)
+	newPlant, err := entities.NewPlant(
+		input.PlantName,
+		input.PlantDescription,
+		input.PlantingDate,
+		input.EstimatedHarvestDate,
+		input.PlantStatus,
+		input.CurrentHeight,
+		input.CurrentWidth,
+		input.IrrigationWeek,
+		input.HealthStatus,
+		input.LastIrrigation,
+		input.LastFertilization,
+		input.SunExposure,
+		input.FertilizationWeek,
+		input.UserID,
+		input.SpeciesID,
+		input.CategoriesPlant,
+	)
+
 	if err != nil {
 		return nil, err
 	}
 
-	specie, err := uc.PlantRepository.FindByID(ctx, input.UserID, input.SpeciesID)
-	if err != nil {
-		return nil, err
-	}
-
-	estimatedHarvestDate, err := entities.CalculateEstimatedHarvest(newPlant, specie)
-	if err != nil {
-		return nil, err
-	}
+	estimatedHarvestDate := CalculateEstimatedHarvestDate(newPlant.PlantingDate, newPlant.EstimatedHarvestDate, input.SpecieHaverstTime)
+	log.Print("Estimated Harvest Date: ", estimatedHarvestDate)
 	newPlant.EstimatedHarvestDate = estimatedHarvestDate
 	id, err := uc.PlantRepository.Create(ctx, newPlant)
 	if err != nil {
@@ -63,5 +86,6 @@ func (uc *CreatePlantUseCase) Execute(ctx context.Context, input CreatePlantUseC
 	if err != nil {
 		return nil, err
 	}
+
 	return plantCreated, nil
 }
