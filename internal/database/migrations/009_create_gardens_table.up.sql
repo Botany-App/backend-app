@@ -5,7 +5,7 @@ CREATE TABLE gardens (
     garden_description TEXT NOT NULL,
     garden_location VARCHAR(50) NOT NULL,
     total_area NUMERIC(10, 3) NOT NULL,
-    curreting_height NUMERIC(10, 2) NOT NULL,
+    currenting_height NUMERIC(10, 2) NOT NULL,
     currenting_width NUMERIC(10, 2) NOT NULL,
     planting_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_irrigation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

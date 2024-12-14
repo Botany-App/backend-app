@@ -683,7 +683,7 @@ func (r *PlantRepositoryImpl) UpdatePlantPG(ctx context.Context, plant *entities
 		plant.LastFertilization,
 		plant.SunExposure,
 		plant.FertilizationWeek,
-		time.Now(), // Atualiza o campo updated_at
+		time.Now(),
 		plant.Id,
 	)
 	if err != nil {
@@ -691,7 +691,6 @@ func (r *PlantRepositoryImpl) UpdatePlantPG(ctx context.Context, plant *entities
 		return fmt.Errorf("erro ao atualizar planta: %v", err)
 	}
 
-	// Remover categorias existentes da planta
 	deleteCategoriesQuery := `
         DELETE FROM plant_categories
         WHERE plant_id = $1;
@@ -708,7 +707,6 @@ func (r *PlantRepositoryImpl) UpdatePlantPG(ctx context.Context, plant *entities
 		return fmt.Errorf("erro ao remover categorias da planta: %v", err)
 	}
 
-	// Inserir novas categorias associadas à planta
 	insertCategoryQuery := `
         INSERT INTO plant_categories (id, plant_id, category_id)
         VALUES ($1, $2, $3);
@@ -722,7 +720,6 @@ func (r *PlantRepositoryImpl) UpdatePlantPG(ctx context.Context, plant *entities
 		}
 	}
 
-	// Commit da transação
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("erro ao confirmar transação: %v", err)
 	}
@@ -741,7 +738,6 @@ func (r *PlantRepositoryImpl) Update(ctx context.Context, plant *entities.Plant)
 func (r *PlantRepositoryImpl) DeletePlantPG(ctx context.Context, userID, plantID string) error {
 	log.Printf("Deletando planta no PostgreSQL: plantID=%s, userID=%s\n", plantID, userID)
 
-	// Validação dos IDs
 	if userID == "" || plantID == "" {
 		log.Println("Erro: ID do usuário ou da planta não fornecido.")
 		return fmt.Errorf("ID do usuário ou da planta não fornecido")
@@ -762,7 +758,6 @@ func (r *PlantRepositoryImpl) DeletePlantPG(ctx context.Context, userID, plantID
 
 func (r *PlantRepositoryImpl) Delete(ctx context.Context, userID, plantID string) error {
 
-	// Verifica se a planta existe
 	plantWithCategory, err := r.FindByID(ctx, userID, plantID)
 	if err != nil {
 		log.Printf("Erro ao buscar planta %s: %v", plantID, err)
@@ -773,7 +768,6 @@ func (r *PlantRepositoryImpl) Delete(ctx context.Context, userID, plantID string
 		return errors.New("planta não encontrada")
 	}
 
-	// Deleta no PostgreSQL
 	if err := r.DeletePlantPG(ctx, userID, plantID); err != nil {
 		return err
 	}
