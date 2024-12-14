@@ -8,6 +8,7 @@ import (
 	"github.com/lucasBiazon/botany-back/internal/middleware"
 	"github.com/lucasBiazon/botany-back/internal/repositories"
 	usecases_categoryplant "github.com/lucasBiazon/botany-back/internal/usecases/category-plant"
+	usecases_categoryTask "github.com/lucasBiazon/botany-back/internal/usecases/category-task"
 	usecases_plant "github.com/lucasBiazon/botany-back/internal/usecases/plant"
 	usecases_specie "github.com/lucasBiazon/botany-back/internal/usecases/specie"
 	usecases "github.com/lucasBiazon/botany-back/internal/usecases/user"
@@ -68,6 +69,7 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		FindByNameSpecieRoutes,
 	)
 
+	// plant Routes
 	repositoryPlant := repositories.NewPlantRepositoryImpl(db, clientRedis)
 	CreatePlantRoute := usecases_plant.NewCreatePlantUseCase(repositoryPlant, repositorySpecies)
 	DeletePlantRoute := usecases_plant.NewDeletePlantUseCase(repositoryPlant, repositorySpecies)
@@ -90,6 +92,23 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		FindByIdSpecieRoutes,
 	)
 
+	// category task routes
+	repositoryCategoriesTasks := repositories.NewCategoryTaskRepository(db, clientRedis)
+	CreateCategoryTaskRoutes := usecases_categoryTask.NewCreateCategoryTaskUseCase(repositoryCategoriesTasks)
+	FindAllCategoryTaskRoutes := usecases_categoryTask.NewFindAllCategoryTaskUseCase(repositoryCategoriesTasks)
+	FindByCategoryTaskRoutes := usecases_categoryTask.NewFindByIdCategoryTaskUseCase(repositoryCategoriesTasks)
+	FindByNameCategoryTaskRoutes := usecases_categoryTask.NewFindByNameCategoryTaskUseCase(repositoryCategoriesTasks)
+	UpdateCategoryTaskRoutes := usecases_categoryTask.NewUpdateCategoryTaskUseCase(repositoryCategoriesTasks)
+	DeleteCategoryTaskRoutes := usecases_categoryTask.NewDeleteCategoryTaskUseCase(repositoryCategoriesTasks)
+
+	categoryTaskHandlers := handlers.NewCategoryTaskHandler(
+		CreateCategoryTaskRoutes,
+		DeleteCategoryTaskRoutes,
+		FindAllCategoryTaskRoutes,
+		FindByCategoryTaskRoutes,
+		FindByNameCategoryTaskRoutes,
+		UpdateCategoryTaskRoutes,
+	)
 	// Routes
 	r := chi.NewRouter()
 	r.Use(middleware.ApiKeyMiddleware)
@@ -118,6 +137,16 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Get("/name", categoryPlantHandlers.FindByNameCategoryPlantHandler)
 		r.Put("/", categoryPlantHandlers.UpdateCategoryPlantHandler)
 		r.Delete("/", categoryPlantHandlers.DeleteCategoryPlantHandler)
+	})
+
+	r.Route("/api/v1/category-task", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(jwtService))
+		r.Post("/", categoryTaskHandlers.CreateCategoryTaskHandler)
+		r.Get("/", categoryTaskHandlers.FindAllCategoryTaskHandler)
+		r.Get("/id", categoryTaskHandlers.FindByIdCategoryTaskHandler)
+		r.Get("/name", categoryTaskHandlers.FindByNameCategoryTaskHandler)
+		r.Put("/", categoryTaskHandlers.UpdateCategoryTaskHandler)
+		r.Delete("/", categoryTaskHandlers.DeleteCategoryTaskHandler)
 	})
 
 	r.Route("/api/v1/specie", func(r chi.Router) {
