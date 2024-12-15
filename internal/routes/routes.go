@@ -12,6 +12,7 @@ import (
 	usecases_garden "github.com/lucasBiazon/botany-back/internal/usecases/garden"
 	usecases_plant "github.com/lucasBiazon/botany-back/internal/usecases/plant"
 	usecases_specie "github.com/lucasBiazon/botany-back/internal/usecases/specie"
+	usecases_task "github.com/lucasBiazon/botany-back/internal/usecases/task"
 	usecases "github.com/lucasBiazon/botany-back/internal/usecases/user"
 
 	services "github.com/lucasBiazon/botany-back/internal/service"
@@ -133,6 +134,29 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		FindByCategoryGardenRoutes,
 	)
 
+	// task routes
+	repositoryTask := repositories.NewTaskRepository(db)
+	CreateTaskRoutes := usecases_task.NewCreateTaskUseCase(repositoryTask)
+	DeleteTaskRoutes := usecases_task.NewDeleteTaskUseCase(repositoryTask)
+	FindAllTaskRoutes := usecases_task.NewFindAllTaskUseCase(repositoryTask)
+	FindByIdTaskRoutes := usecases_task.NewFindByIdTaskUseCase(repositoryTask)
+	FindByNameTaskRoutes := usecases_task.NewFindByNameTaskUseCase(repositoryTask)
+	FindByCategoryNameTaskRoutes := usecases_task.NewFindByCategoryNameTaskUseCase(repositoryTask)
+	UpdateTaskRoutes := usecases_task.NewUpdateTaskUseCase(repositoryTask)
+	FindByStatusTaskRoutes := usecases_task.NewFindByStatusTaskUseCase(repositoryTask)
+	FindByUrgencyLevelTaskRoutes := usecases_task.NewFindByUrgencyLevelTaskUseCase(repositoryTask)
+
+	taskHandlers := handlers.NewTaskHandler(
+		CreateTaskRoutes,
+		DeleteTaskRoutes,
+		FindAllTaskRoutes,
+		FindByCategoryNameTaskRoutes,
+		FindByIdTaskRoutes,
+		UpdateTaskRoutes,
+		FindByNameTaskRoutes,
+		FindByStatusTaskRoutes,
+		FindByUrgencyLevelTaskRoutes,
+	)
 	// Routes
 	r := chi.NewRouter()
 	r.Use(middleware.ApiKeyMiddleware)
@@ -202,6 +226,19 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Get("/category-name", gardenHandlers.FindByCategoryNameGardenHandler)
 		r.Get("/location", gardenHandlers.FindByLocationGardenHandler)
 		r.Put("/", gardenHandlers.UpdateGardenHandler)
+	})
+
+	r.Route("/api/v1/task", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(jwtService))
+		r.Post("/", taskHandlers.CreateTaskHandler)
+		r.Delete("/", taskHandlers.DeleteTaskHandler)
+		r.Get("/", taskHandlers.FindAllTaskHandler)
+		r.Get("/category-name", taskHandlers.FindByCategoryNameTaskHandler)
+		r.Get("/id", taskHandlers.FindByIdTaskHandler)
+		r.Get("/name", taskHandlers.FindByNameTaskHandler)
+		r.Put("/", taskHandlers.UpdateTaskHandler)
+		r.Get("/status", taskHandlers.FindByStatusTaskHandler)
+		r.Get("/urgency-level", taskHandlers.FindByUrgencyLevelTaskHandler)
 	})
 
 	return r, nil
