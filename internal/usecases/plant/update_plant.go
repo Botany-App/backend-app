@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lucasBiazon/botany-back/internal/entities"
 	"github.com/pkg/errors"
 )
@@ -27,6 +28,9 @@ type UpdatePlantUseCaseInputDTO struct {
 	UserID               string    `json:"user_id"`
 	SpeciesID            string    `json:"species_id"`
 	CategoriesPlant      []string  `json:"categories_plant"`
+	Note                 string    `json:"note"`
+	IrrigationHistory    bool      `json:"irrigation_history"`
+	FertilizationHistory bool      `json:"fertilization_history"`
 }
 
 type UpdatePlantUseCase struct {
@@ -134,6 +138,24 @@ func (u *UpdatePlantUseCase) Execute(ctx context.Context, input UpdatePlantUseCa
 		UpdatedAt:            time.Now(),
 	}
 
+	historyPlant := &entities.HistoryPlant{
+		ID:                uuid.New().String(),
+		PlantID:           existingPlant.PlantId,
+		IrrigationWeek:    existingPlant.IrrigationWeek,
+		HealthStatus:      existingPlant.HealthStatus,
+		SunExposure:       existingPlant.SunExposure,
+		FertilizationWeek: existingPlant.FertilizationWeek,
+		UserID:            existingPlant.UserId,
+		Notes:             input.Note,
+		Height:            existingPlant.CurrentHeight,
+		Width:             existingPlant.CurrentWidth,
+		RecordDate:        time.Now(),
+		Irrigation:        input.IrrigationHistory,
+		Fertilization:     input.FertilizationHistory,
+	}
+	if err := u.PlantRepo.CreateHistory(ctx, historyPlant); err != nil {
+		return nil, fmt.Errorf("erro ao criar histórico da planta: %w", err)
+	}
 	if err := u.PlantRepo.Update(ctx, updatedPlant); err != nil {
 		return nil, fmt.Errorf("erro ao atualizar planta: %w", err)
 	}

@@ -50,6 +50,25 @@ type GardenOutputDTO struct {
 	Plants            []Plant         `json:"plants"`
 }
 
+type HistoryGarden struct {
+	ID                string    `json:"id"`
+	GardenID          string    `json:"garden_id"`
+	GardenLocation    string    `json:"garden_location"`
+	TotalArea         float64   `json:"total_area"`
+	RecordDate        time.Time `json:"record_date"`
+	Height            float64   `json:"height"`
+	Width             float64   `json:"width"`
+	HealthStatus      string    `json:"health_status"`
+	Irrigation        bool      `json:"irrigation"`
+	Fertilization     bool      `json:"fertilization"`
+	IrrigationWeek    int       `json:"irrigation_week"`
+	SunExposure       float64   `json:"sun_exposure"`
+	FertilizationWeek float64   `json:"fertilization_week"`
+	Notes             string    `json:"notes"`
+	UserID            string    `json:"user_id"`
+	CreatedAt         time.Time `json:"created_at"`
+}
+
 type GardenRepository interface {
 	Create(ctx context.Context, garden *Garden) (string, error)
 	FindByID(ctx context.Context, userId, id string) (*GardenOutputDTO, error)
@@ -59,6 +78,8 @@ type GardenRepository interface {
 	FindAll(ctx context.Context, userId string) ([]*GardenOutputDTO, error)
 	Update(ctx context.Context, garden *Garden) error
 	Delete(ctx context.Context, userId, id string) error
+	CreateHistory(ctx context.Context, garden *HistoryGarden) error
+	FindAllHistoryByGardenID(ctx context.Context, gardenID string) ([]*HistoryGarden, error)
 }
 
 func NewGarden(

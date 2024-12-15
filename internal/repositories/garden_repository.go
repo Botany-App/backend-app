@@ -706,3 +706,111 @@ func (r *GardenRepositoryImpl) Delete(ctx context.Context, userId, id string) er
 
 	return nil
 }
+
+func (r *GardenRepositoryImpl) CreateHistory(ctx context.Context, garden *entities.HistoryGarden) error {
+	query := `INSERT INTO history_gardens (
+			id, garden_id, garden_location, total_area, record_date, height, width, health_status, 
+			irrigation, fertilization, irrigation_week, sun_exposure, fertilization_week, notes, user_id
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);`
+
+	idParsed, err := uuid.Parse(garden.ID)
+	if err != nil {
+		return err
+	}
+	gardenIdParsed, err := uuid.Parse(garden.GardenID)
+	if err != nil {
+		return err
+	}
+
+	userIdParsed, err := uuid.Parse(garden.UserID)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.DB.ExecContext(ctx, query, idParsed, gardenIdParsed, garden.GardenLocation, garden.TotalArea, garden.RecordDate,
+		garden.Height, garden.Width, garden.HealthStatus, garden.Irrigation, garden.Fertilization, garden.IrrigationWeek,
+		garden.SunExposure, garden.FertilizationWeek, garden.Notes, userIdParsed)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (r *GardenRepositoryImpl) FindAllHistoryByGardenID(ctx context.Context, gardenID string) ([]*entities.HistoryGarden, error) {
+
+	gardenIdParsed, err := uuid.Parse(gardenID)
+	if err != nil {
+		return nil, err
+	}
+
+	query := `SELECT 
+		hg.id,
+		hg.garden_id,
+		hg.garden_location,
+		hg.total_area,
+		hg.record_date,
+		hg.height,
+		hg.width,
+		hg.health_status,
+		hg.irrigation,
+		hg.fertilization,
+		hg.irrigation_week,
+		hg.sun_exposure,
+		hg.fertilization_week,
+		hg.notes,
+		hg.user_id,
+		hg.created_at
+	FROM 
+		history_gardens hg
+	WHERE 
+		hg.garden_id = $1;`
+
+	rows, err := r.DB.QueryContext(ctx, query, gardenIdParsed)
+	if err != nil {
+		log.Fatalf("Erro ao executar consulta: %v", err)
+	}
+	defer rows.Close()
+
+	historyGardens := make([]*entities.HistoryGarden, 0)
+
+	for rows.Next() {
+		historyGarden := entities.HistoryGarden{}
+		err := rows.Scan(
+			&historyGarden.ID,
+			&historyGarden.GardenID,
+			&historyGarden.GardenLocation,
+			&historyGarden.TotalArea,
+			&historyGarden.RecordDate,
+			&historyGarden.Height,
+			&historyGarden.Width,
+			&historyGarden.HealthStatus,
+			&historyGarden.Irrigation,
+			&historyGarden.Fertilization,
+			&historyGarden.IrrigationWeek,
+			&historyGarden.SunExposure,
+			&historyGarden.FertilizationWeek,
+			&historyGarden.Notes,
+			&historyGarden.UserID,
+			&historyGarden.CreatedAt,
+		)
+		if err != nil {
+			log.Fatalf("Erro ao escanear resultados: %v", err)
+		}
+
+		historyGardens = append(historyGardens, &historyGarden)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Fatalf("Erro durante a iteração: %v", err)
+	}
+
+	if len(historyGardens) == 0 {
+		log.Println("Nenhum histórico encontrado para os parâmetros fornecidos.")
+	}
+
+	return historyGardens, nil
+}

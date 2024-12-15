@@ -5,26 +5,31 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lucasBiazon/botany-back/internal/entities"
 )
 
 type UpdateGardenUseCaseInputDTO struct {
-	ID                string    `json:"id"`
-	GardenName        string    `json:"garden_name"`
-	UserID            string    `json:"user_id"`
-	GardenDescription string    `json:"garden_description"`
-	GardenLocation    string    `json:"garden_location"`
-	TotalArea         float64   `json:"total_area"`
-	CurrentingHeight  float64   `json:"currenting_heigth"`
-	CurrentingWidth   float64   `json:"currenting_width"`
-	PlantingDate      time.Time `json:"planting_date"`
-	LastIrrigation    time.Time `json:"last_irrigation"`
-	LastFertilization time.Time `json:"last_fertilization"`
-	IrrigationWeek    int       `json:"irrigation_week"`
-	SunExposure       int       `json:"sun_exposure"`
-	FertilizationWeek int       `json:"fertilization_week"`
-	CategoriesPlantId []string  `json:"categories_plant"`
-	PlantsId          []string  `json:"plants_id"`
+	ID                   string    `json:"id"`
+	GardenName           string    `json:"garden_name"`
+	UserID               string    `json:"user_id"`
+	GardenDescription    string    `json:"garden_description"`
+	GardenLocation       string    `json:"garden_location"`
+	TotalArea            float64   `json:"total_area"`
+	CurrentingHeight     float64   `json:"currenting_heigth"`
+	CurrentingWidth      float64   `json:"currenting_width"`
+	PlantingDate         time.Time `json:"planting_date"`
+	LastIrrigation       time.Time `json:"last_irrigation"`
+	LastFertilization    time.Time `json:"last_fertilization"`
+	IrrigationWeek       int       `json:"irrigation_week"`
+	SunExposure          int       `json:"sun_exposure"`
+	FertilizationWeek    int       `json:"fertilization_week"`
+	CategoriesPlantId    []string  `json:"categories_plant"`
+	PlantsId             []string  `json:"plants_id"`
+	Notes                string    `json:"notes"`
+	IrrigationHistory    bool      `json:"irrigation_history"`
+	FertilizationHistory bool      `json:"fertilization_history"`
+	HealthStatus         string    `json:"health_status"`
 }
 
 type UpdateGardenUseCase struct {
@@ -123,6 +128,27 @@ func (uc *UpdateGardenUseCase) Execute(ctx context.Context, input UpdateGardenUs
 		PlantsId:          input.PlantsId,
 		UpdatedAt:         time.Now(),
 		UserId:            input.UserID,
+	}
+
+	historyGarden := &entities.HistoryGarden{
+		ID:                uuid.New().String(),
+		GardenID:          input.ID,
+		GardenLocation:    input.GardenLocation,
+		TotalArea:         input.TotalArea,
+		Height:            input.CurrentingHeight,
+		Width:             input.CurrentingWidth,
+		IrrigationWeek:    input.IrrigationWeek,
+		SunExposure:       float64(input.SunExposure),
+		FertilizationWeek: float64(input.FertilizationWeek),
+		Notes:             input.Notes,
+		Irrigation:        input.IrrigationHistory,
+		Fertilization:     input.FertilizationHistory,
+		RecordDate:        time.Now(),
+		HealthStatus:      input.HealthStatus,
+	}
+
+	if err := uc.Repository.CreateHistory(ctx, historyGarden); err != nil {
+		return nil, err
 	}
 	if err := uc.Repository.Update(ctx, updatedGarden); err != nil {
 		return nil, err

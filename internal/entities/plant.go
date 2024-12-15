@@ -52,6 +52,23 @@ type PlantWithCategory struct {
 	Category             []CategoryPlant
 }
 
+type HistoryPlant struct {
+	ID                string    `json:"id"`
+	PlantID           string    `json:"plant_id"`
+	IrrigationWeek    int       `json:"irrigation_week"`
+	RecordDate        time.Time `json:"record_date"`
+	Height            float64   `json:"height"`
+	Width             float64   `json:"width"`
+	HealthStatus      string    `json:"health_status"`
+	Irrigation        bool      `json:"irrigation"`
+	Fertilization     bool      `json:"fertilization"`
+	SunExposure       float64   `json:"sun_exposure"`
+	FertilizationWeek float64   `json:"fertilization_week"`
+	Notes             string    `json:"notes"`
+	UserID            string    `json:"user_id"`
+	CreatedAt         time.Time `json:"created_at"`
+}
+
 type PlantRepository interface {
 	Create(ctx context.Context, plant *Plant) (string, error)
 	FindByID(ctx context.Context, userId, id string) (*PlantWithCategory, error)
@@ -61,6 +78,8 @@ type PlantRepository interface {
 	FindAll(ctx context.Context, userId string) ([]*PlantWithCategory, error)
 	Update(ctx context.Context, plant *Plant) error
 	Delete(ctx context.Context, userId, id string) error
+	CreateHistory(ctx context.Context, plant *HistoryPlant) error
+	FindAllHistoryByPlantID(ctx context.Context, plantID string) ([]*HistoryPlant, error)
 }
 
 func NewPlant(

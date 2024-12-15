@@ -81,6 +81,7 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 	FindByNameCategoryPlantRoute := usecases_plant.NewFindByNameCategoryPlantUseCase(repositoryPlant)
 	FindBySpecieNamePlantRoute := usecases_plant.NewFindBySpecieNamePlantUseCase(repositoryPlant)
 	UpdatePlantRoute := usecases_plant.NewUpdatePlantUseCase(repositoryPlant)
+	FindAllHistoryPlantRoutes := usecases_plant.NewFindAllHistoryPlantUseCase(repositoryPlant)
 
 	plantHandlers := handlers.NewPlantHandler(
 		CreatePlantRoute,
@@ -92,6 +93,7 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		FindBySpecieNamePlantRoute,
 		UpdatePlantRoute,
 		FindByIdSpecieRoutes,
+		FindAllHistoryPlantRoutes,
 	)
 
 	// category task routes
@@ -122,7 +124,7 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 	FindByCategoryGardenRoutes := usecases_garden.NewFindByCategoryNameGardenUseCase(repositoryGarden)
 	FindByLocatiopnGardenRoutes := usecases_garden.NewFindByLocationGardenUseCase(repositoryGarden)
 	UpdateGardenRoutes := usecases_garden.NewUpdateGardenUseCase(repositoryGarden)
-
+	FindAllHistoryGardenRoutes := usecases_garden.NewFindAllHistoryGardenUseCase(repositoryGarden)
 	gardenHandlers := handlers.NewGardenHandler(
 		CreateGardenRoutes,
 		DeleteGardenRoutes,
@@ -132,6 +134,7 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		FindByLocatiopnGardenRoutes,
 		FindByNameRoutes,
 		FindByCategoryGardenRoutes,
+		FindAllHistoryGardenRoutes,
 	)
 
 	// task routes
@@ -214,6 +217,7 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Get("/specie-plant-name", plantHandlers.FindBySpecieNamePlantHandler)
 		r.Get("/name", plantHandlers.FindByNamePlantHandler)
 		r.Put("/", plantHandlers.UpdatePlantHandler)
+		r.Get("/history", plantHandlers.FindAllHistoryPlantHandler)
 	})
 
 	r.Route("/api/v1/garden", func(r chi.Router) {
@@ -226,6 +230,7 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Get("/category-name", gardenHandlers.FindByCategoryNameGardenHandler)
 		r.Get("/location", gardenHandlers.FindByLocationGardenHandler)
 		r.Put("/", gardenHandlers.UpdateGardenHandler)
+		r.Get("/history", gardenHandlers.FindAllHistoryGardenHandler)
 	})
 
 	r.Route("/api/v1/task", func(r chi.Router) {

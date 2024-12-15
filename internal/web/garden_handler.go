@@ -20,6 +20,7 @@ type GardenHandler struct {
 	FindByLocationGardenUseCase     *usecases_garden.FindByLocationGardenUseCase
 	FindByNameGardenUseCase         *usecases_garden.FindByNameGardenUseCase
 	FindByCategoryNameGardenUseCase *usecases_garden.FindByCategoryNameGardenUseCase
+	FindAllHistoryGardenUseCase     *usecases_garden.FindAllHistoryGardenUseCase
 }
 
 func NewGardenHandler(
@@ -31,6 +32,7 @@ func NewGardenHandler(
 	findByLocationGardenUseCase *usecases_garden.FindByLocationGardenUseCase,
 	findByNameGardenUseCase *usecases_garden.FindByNameGardenUseCase,
 	findByCategoryNameGardenUseCase *usecases_garden.FindByCategoryNameGardenUseCase,
+	findAllHistoryGardenUseCase *usecases_garden.FindAllHistoryGardenUseCase,
 ) *GardenHandler {
 	return &GardenHandler{
 		CreateGardenUseCase:             createGardenUseCase,
@@ -41,6 +43,7 @@ func NewGardenHandler(
 		FindByLocationGardenUseCase:     findByLocationGardenUseCase,
 		FindByNameGardenUseCase:         findByNameGardenUseCase,
 		FindByCategoryNameGardenUseCase: findByCategoryNameGardenUseCase,
+		FindAllHistoryGardenUseCase:     findAllHistoryGardenUseCase,
 	}
 }
 
@@ -211,4 +214,24 @@ func (h *GardenHandler) FindByCategoryNameGardenHandler(w http.ResponseWriter, r
 		return
 	}
 	utils.JsonResponse(w, http.StatusOK, "success", "Jardins encontrados", gardens)
+}
+
+func (h *GardenHandler) FindAllHistoryGardenHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases_garden.FindAllHistoryGardenUseCaseInputDTO
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
+		return
+	}
+	auth := r.Header.Get("Authorization")
+	_, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
+	if err != nil {
+		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
+		return
+	}
+	historyGardens, err := h.FindAllHistoryGardenUseCase.Execute(context.Background(), input)
+	if err != nil {
+		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
+		return
+	}
+	utils.JsonResponse(w, http.StatusOK, "success", "Histórico encontrado", historyGardens)
 }

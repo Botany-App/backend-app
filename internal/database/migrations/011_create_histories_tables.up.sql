@@ -1,5 +1,5 @@
 CREATE TABLE history_plants (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT,
     plant_id UUID NOT NULL,
     irrigation_week NUMERIC DEFAULT 0 NOT NULL,
     record_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -31,6 +31,7 @@ CREATE TABLE history_gardens (
     irrigation_week NUMERIC DEFAULT 0 NOT NULL,
     sun_exposure NUMERIC NOT NULL,
     fertilization_week NUMERIC DEFAULT 0 NOT NULL,
+    notes TEXT,
     user_id UUID NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_garden_log FOREIGN KEY (garden_id) REFERENCES gardens(id) ON DELETE CASCADE,

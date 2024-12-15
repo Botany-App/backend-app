@@ -21,6 +21,7 @@ type PlantHandler struct {
 	FindBySpecieNamePlantUseCase   *usecases_plant.FindBySpecieNamePlantUseCase
 	UpdatePlantUseCase             *usecases_plant.UpdatePlantUseCase
 	FindByIdSpecieUseCase          *usecases_specie.FindByIdSpecieUseCase
+	FindAllHistoryPlantUseCase     *usecases_plant.FindAllHistoryPlantUseCase
 }
 
 func NewPlantHandler(
@@ -33,6 +34,7 @@ func NewPlantHandler(
 	findBySpecieNamePlantUseCase *usecases_plant.FindBySpecieNamePlantUseCase,
 	updatePlantUseCase *usecases_plant.UpdatePlantUseCase,
 	findByIdSpecieUseCase *usecases_specie.FindByIdSpecieUseCase,
+	findAllHistoryPlantUseCase *usecases_plant.FindAllHistoryPlantUseCase,
 ) *PlantHandler {
 	return &PlantHandler{
 		CreatePlantUseCase:             createPlantUseCase,
@@ -44,6 +46,7 @@ func NewPlantHandler(
 		FindBySpecieNamePlantUseCase:   findBySpecieNamePlantUseCase,
 		UpdatePlantUseCase:             updatePlantUseCase,
 		FindByIdSpecieUseCase:          findByIdSpecieUseCase,
+		FindAllHistoryPlantUseCase:     findAllHistoryPlantUseCase,
 	}
 }
 
@@ -215,4 +218,24 @@ func (h *PlantHandler) UpdatePlantHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	utils.JsonResponse(w, http.StatusOK, "success", "Planta atualizada com sucesso", plant)
+}
+
+func (h *PlantHandler) FindAllHistoryPlantHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases_plant.FindAllHistoryPlantUseCaseInputDTO
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
+		return
+	}
+	auth := r.Header.Get("Authorization")
+	_, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
+	if err != nil {
+		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
+		return
+	}
+	history, err := h.FindAllHistoryPlantUseCase.Execute(r.Context(), input)
+	if err != nil {
+		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
+		return
+	}
+	utils.JsonResponse(w, http.StatusOK, "success", "Histórico encontrado", history)
 }

@@ -774,3 +774,76 @@ func (r *PlantRepositoryImpl) Delete(ctx context.Context, userID, plantID string
 	log.Println("Processo de exclusão da planta concluído com sucesso.")
 	return nil
 }
+
+func (r *PlantRepositoryImpl) CreateHistory(ctx context.Context, plant *entities.HistoryPlant) error {
+	idParse, err := uuid.Parse(plant.ID)
+	if err != nil {
+		return fmt.Errorf("erro ao converter ID da planta: %w", err)
+	}
+
+	plantIdParse, err := uuid.Parse(plant.PlantID)
+	if err != nil {
+		return fmt.Errorf("erro ao converter ID da planta: %w", err)
+	}
+
+	userIdParse, err := uuid.Parse(plant.UserID)
+	if err != nil {
+		return fmt.Errorf("erro ao converter ID do usuário: %w", err)
+	}
+
+	query := `
+	INSERT INTO history_plants (
+		id, plant_id, irrigation_week, record_date, height, width, health_status, 
+		irrigation, fertilization, sun_exposure, fertilization_week, notes, user_id
+	)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
+
+	_, err = r.DB.ExecContext(ctx, query, idParse, plantIdParse, plant.IrrigationWeek, plant.RecordDate,
+		plant.Height, plant.Width, plant.HealthStatus, plant.Irrigation, plant.Fertilization,
+		plant.SunExposure, plant.FertilizationWeek, plant.Notes, userIdParse)
+	if err != nil {
+		return fmt.Errorf("erro ao inserir histórico da planta: %w", err)
+	}
+
+	return nil
+}
+
+func (r *PlantRepositoryImpl) FindAllHistoryByPlantID(ctx context.Context, plantID string) ([]*entities.HistoryPlant, error) {
+	query := `
+		SELECT id, plant_id, irrigation_week, record_date, height, width, health_status, 
+			irrigation, fertilization, sun_exposure, fertilization_week, notes, user_id
+		FROM history_plants WHERE plant_id = $1
+	`
+
+	rows, err := r.DB.QueryContext(ctx, query, plantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var historyPlants []*entities.HistoryPlant
+	for rows.Next() {
+		var historyPlant entities.HistoryPlant
+		err := rows.Scan(
+			&historyPlant.ID,
+			&historyPlant.PlantID,
+			&historyPlant.IrrigationWeek,
+			&historyPlant.RecordDate,
+			&historyPlant.Height,
+			&historyPlant.Width,
+			&historyPlant.HealthStatus,
+			&historyPlant.Irrigation,
+			&historyPlant.Fertilization,
+			&historyPlant.SunExposure,
+			&historyPlant.FertilizationWeek,
+			&historyPlant.Notes,
+			&historyPlant.UserID,
+		)
+		if err != nil {
+			return nil, err
+		}
+		historyPlants = append(historyPlants, &historyPlant)
+	}
+
+	return historyPlants, nil
+}
