@@ -9,7 +9,6 @@ import (
 
 type DeleteGardenUseCase struct {
 	GardenRepository entities.GardenRepository
-	SpecieRepository entities.SpecieRepository
 }
 
 type DeleteGardenUseCaseInputDTO struct {
@@ -17,10 +16,9 @@ type DeleteGardenUseCaseInputDTO struct {
 	UserID string `json:"user_id"`
 }
 
-func NewDeleteGardenUseCase(repository entities.GardenRepository, specieRepository entities.SpecieRepository) *DeleteGardenUseCase {
+func NewDeleteGardenUseCase(repository entities.GardenRepository) *DeleteGardenUseCase {
 	return &DeleteGardenUseCase{
 		GardenRepository: repository,
-		SpecieRepository: specieRepository,
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/lucasBiazon/botany-back/internal/repositories"
 	usecases_categoryplant "github.com/lucasBiazon/botany-back/internal/usecases/category-plant"
 	usecases_categoryTask "github.com/lucasBiazon/botany-back/internal/usecases/category-task"
+	usecases_garden "github.com/lucasBiazon/botany-back/internal/usecases/garden"
 	usecases_plant "github.com/lucasBiazon/botany-back/internal/usecases/plant"
 	usecases_specie "github.com/lucasBiazon/botany-back/internal/usecases/specie"
 	usecases "github.com/lucasBiazon/botany-back/internal/usecases/user"
@@ -109,6 +110,29 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		FindByNameCategoryTaskRoutes,
 		UpdateCategoryTaskRoutes,
 	)
+
+	// garden routes
+	repositoryGarden := repositories.NewGardenRepository(db)
+	CreateGardenRoutes := usecases_garden.NewCreateGardenUseCase(repositoryGarden)
+	DeleteGardenRoutes := usecases_garden.NewDeleteGardenUseCase(repositoryGarden)
+	FindAllGardenRoutes := usecases_garden.NewFindAllGardenUseCase(repositoryGarden)
+	FindByIdGardenRoutes := usecases_garden.NewFindByIdGardenUseCase(repositoryGarden)
+	FindByNameRoutes := usecases_garden.NewFindByNameGardenUseCase(repositoryGarden)
+	FindByCategoryGardenRoutes := usecases_garden.NewFindByCategoryNameGardenUseCase(repositoryGarden)
+	FindByLocatiopnGardenRoutes := usecases_garden.NewFindByLocationGardenUseCase(repositoryGarden)
+	UpdateGardenRoutes := usecases_garden.NewUpdateGardenUseCase(repositoryGarden)
+
+	gardenHandlers := handlers.NewGardenHandler(
+		CreateGardenRoutes,
+		DeleteGardenRoutes,
+		FindAllGardenRoutes,
+		FindByIdGardenRoutes,
+		UpdateGardenRoutes,
+		FindByLocatiopnGardenRoutes,
+		FindByNameRoutes,
+		FindByCategoryGardenRoutes,
+	)
+
 	// Routes
 	r := chi.NewRouter()
 	r.Use(middleware.ApiKeyMiddleware)
@@ -166,6 +190,18 @@ func InitializeRoutes(db *sql.DB, clientRedis *redis.Client, jwtService services
 		r.Get("/specie-plant-name", plantHandlers.FindBySpecieNamePlantHandler)
 		r.Get("/name", plantHandlers.FindByNamePlantHandler)
 		r.Put("/", plantHandlers.UpdatePlantHandler)
+	})
+
+	r.Route("/api/v1/garden", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(jwtService))
+		r.Post("/", gardenHandlers.CreateGardenHandler)
+		r.Delete("/", gardenHandlers.DeleteGardenHandler)
+		r.Get("/", gardenHandlers.FindAllGardenHandler)
+		r.Get("/id", gardenHandlers.FindByIdGardenHandler)
+		r.Get("/name", gardenHandlers.FindByNameGardenHandler)
+		r.Get("/category-name", gardenHandlers.FindByCategoryNameGardenHandler)
+		r.Get("/location", gardenHandlers.FindByLocationGardenHandler)
+		r.Put("/", gardenHandlers.UpdateGardenHandler)
 	})
 
 	return r, nil

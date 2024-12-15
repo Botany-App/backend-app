@@ -71,7 +71,7 @@ func (r *GardenRepositoryImpl) Create(ctx context.Context, garden *entities.Gard
 	return garden.Id, nil
 }
 
-func (r *GardenRepositoryImpl) FindById(ctx context.Context, userId, id string) (*entities.GardenOutputDTO, error) {
+func (r *GardenRepositoryImpl) FindByID(ctx context.Context, userId, id string) (*entities.GardenOutputDTO, error) {
 	idParse, err := uuid.Parse(id)
 	if err != nil {
 		return nil, err
@@ -181,12 +181,11 @@ func (r *GardenRepositoryImpl) FindById(ctx context.Context, userId, id string) 
 	return garden, nil
 }
 
-func (r *GardenRepositoryImpl) FindAll(ctx context.Context, userId, gardenName string) ([]*entities.GardenOutputDTO, error) {
+func (r *GardenRepositoryImpl) FindAll(ctx context.Context, userId string) ([]*entities.GardenOutputDTO, error) {
 	userIdParse, err := uuid.Parse(userId)
 	if err != nil {
 		return nil, err
 	}
-
 	query := `SELECT 
 		g.id AS garden_id,
 		g.garden_name,

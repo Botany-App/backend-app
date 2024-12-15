@@ -1,81 +1,52 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"os"
 
 	services "github.com/lucasBiazon/botany-back/internal/service"
-	usecases_plant "github.com/lucasBiazon/botany-back/internal/usecases/plant"
-	usecases_specie "github.com/lucasBiazon/botany-back/internal/usecases/specie"
+	usecases_garden "github.com/lucasBiazon/botany-back/internal/usecases/garden"
 	"github.com/lucasBiazon/botany-back/internal/utils"
 )
 
-type PlantHandler struct {
-	CreatePlantUseCase             *usecases_plant.CreatePlantUseCase
-	DeletePlantUseCase             *usecases_plant.DeletePlantUseCase
-	FindAllPlantUseCase            *usecases_plant.FindAllPlantUseCase
-	FindByCategoryNamePlantUseCase *usecases_plant.FindByCategoryNamePlantUseCase
-	FindByIdPlantUseCase           *usecases_plant.FindByIdPlantUseCase
-	FindByNamePlantUseCase         *usecases_plant.FindByNamePlantUseCase
-	FindBySpecieNamePlantUseCase   *usecases_plant.FindBySpecieNamePlantUseCase
-	UpdatePlantUseCase             *usecases_plant.UpdatePlantUseCase
-	FindByIdSpecieUseCase          *usecases_specie.FindByIdSpecieUseCase
+type GardenHandler struct {
+	CreateGardenUseCase             *usecases_garden.CreateGardenUseCase
+	DeleteGardenUseCase             *usecases_garden.DeleteGardenUseCase
+	FindAllGardenUseCase            *usecases_garden.FindAllGardenUseCase
+	FindByIdGardenUseCase           *usecases_garden.FindByIdGardenUseCase
+	UpdateGardenUseCase             *usecases_garden.UpdateGardenUseCase
+	FindByLocationGardenUseCase     *usecases_garden.FindByLocationGardenUseCase
+	FindByNameGardenUseCase         *usecases_garden.FindByNameGardenUseCase
+	FindByCategoryNameGardenUseCase *usecases_garden.FindByCategoryNameGardenUseCase
 }
 
-func NewPlantHandler(
-	createPlantUseCase *usecases_plant.CreatePlantUseCase,
-	deletePlantUseCase *usecases_plant.DeletePlantUseCase,
-	findAllPlantUseCase *usecases_plant.FindAllPlantUseCase,
-	findByCategoryNamePlantUseCase *usecases_plant.FindByCategoryNamePlantUseCase,
-	findByIdPlantUseCase *usecases_plant.FindByIdPlantUseCase,
-	findByNamePlantUseCase *usecases_plant.FindByNamePlantUseCase,
-	findBySpecieNamePlantUseCase *usecases_plant.FindBySpecieNamePlantUseCase,
-	updatePlantUseCase *usecases_plant.UpdatePlantUseCase,
-	findByIdSpecieUseCase *usecases_specie.FindByIdSpecieUseCase,
-) *PlantHandler {
-	return &PlantHandler{
-		CreatePlantUseCase:             createPlantUseCase,
-		DeletePlantUseCase:             deletePlantUseCase,
-		FindAllPlantUseCase:            findAllPlantUseCase,
-		FindByCategoryNamePlantUseCase: findByCategoryNamePlantUseCase,
-		FindByIdPlantUseCase:           findByIdPlantUseCase,
-		FindByNamePlantUseCase:         findByNamePlantUseCase,
-		FindBySpecieNamePlantUseCase:   findBySpecieNamePlantUseCase,
-		UpdatePlantUseCase:             updatePlantUseCase,
-		FindByIdSpecieUseCase:          findByIdSpecieUseCase,
+func NewGardenHandler(
+	createGardenUseCase *usecases_garden.CreateGardenUseCase,
+	deleteGardenUseCase *usecases_garden.DeleteGardenUseCase,
+	findAllGardenUseCase *usecases_garden.FindAllGardenUseCase,
+	findByIdGardenUseCase *usecases_garden.FindByIdGardenUseCase,
+	updateGardenUseCase *usecases_garden.UpdateGardenUseCase,
+	findByLocationGardenUseCase *usecases_garden.FindByLocationGardenUseCase,
+	findByNameGardenUseCase *usecases_garden.FindByNameGardenUseCase,
+	findByCategoryNameGardenUseCase *usecases_garden.FindByCategoryNameGardenUseCase,
+) *GardenHandler {
+	return &GardenHandler{
+		CreateGardenUseCase:             createGardenUseCase,
+		DeleteGardenUseCase:             deleteGardenUseCase,
+		FindAllGardenUseCase:            findAllGardenUseCase,
+		FindByIdGardenUseCase:           findByIdGardenUseCase,
+		UpdateGardenUseCase:             updateGardenUseCase,
+		FindByLocationGardenUseCase:     findByLocationGardenUseCase,
+		FindByNameGardenUseCase:         findByNameGardenUseCase,
+		FindByCategoryNameGardenUseCase: findByCategoryNameGardenUseCase,
 	}
 }
 
-func (h *PlantHandler) CreatePlantHandler(w http.ResponseWriter, r *http.Request) {
-	var input usecases_plant.CreatePlantUseCaseInputDTO
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
-		return
-	}
-	auth := r.Header.Get("Authorization")
-	userId, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
-	if err != nil {
-		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
-		return
-	}
-	specieHaverstTime, err := h.FindByIdSpecieUseCase.Execute(r.Context(), usecases_specie.FindByIdSpecieInputDTO{Id: input.SpeciesID})
-	if err != nil {
-		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
-		return
-	}
-	input.UserID = userId
-	input.SpecieHaverstTime = specieHaverstTime.HarvestTime
-	plant, err := h.CreatePlantUseCase.Execute(r.Context(), input)
-	if err != nil {
-		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
-		return
-	}
-	utils.JsonResponse(w, http.StatusCreated, "success", "Planta criada com sucesso", plant)
-}
+func (h *GardenHandler) CreateGardenHandler(w http.ResponseWriter, r *http.Request) {
 
-func (h *PlantHandler) DeletePlantHandler(w http.ResponseWriter, r *http.Request) {
-	var input usecases_plant.DeletePlantUseCaseInputDTO
+	var input usecases_garden.CreateGardenUseCaseInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
 		return
@@ -87,54 +58,16 @@ func (h *PlantHandler) DeletePlantHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	input.UserID = userId
-	err = h.DeletePlantUseCase.Execute(r.Context(), input)
+	garden, err := h.CreateGardenUseCase.Execute(context.Background(), input)
 	if err != nil {
 		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
 		return
 	}
-	utils.JsonResponse(w, http.StatusOK, "success", "Planta deletada com sucesso", nil)
+	utils.JsonResponse(w, http.StatusCreated, "success", "Jardim criado com sucesso", garden)
 }
 
-func (h *PlantHandler) FindAllPlantHandler(w http.ResponseWriter, r *http.Request) {
-	var input usecases_plant.FindAllPlantUseCaseInputDTO
-	auth := r.Header.Get("Authorization")
-	userId, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
-	if err != nil {
-		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
-		return
-	}
-	input.UserId = userId
-	plants, err := h.FindAllPlantUseCase.Execute(r.Context(), input)
-	if err != nil {
-		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
-		return
-	}
-	utils.JsonResponse(w, http.StatusOK, "success", "Plantas encontradas", plants)
-}
-
-func (h *PlantHandler) FindByCategoryNamePlantHandler(w http.ResponseWriter, r *http.Request) {
-	var input usecases_plant.FindByCategoryNamePlantUseCaseInputDTO
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
-		return
-	}
-	auth := r.Header.Get("Authorization")
-	userId, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
-	if err != nil {
-		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
-		return
-	}
-	input.UserId = userId
-	plants, err := h.FindByCategoryNamePlantUseCase.Execute(r.Context(), input)
-	if err != nil {
-		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
-		return
-	}
-	utils.JsonResponse(w, http.StatusOK, "success", "Plantas encontradas", plants)
-}
-
-func (h *PlantHandler) FindByIdPlantHandler(w http.ResponseWriter, r *http.Request) {
-	var input usecases_plant.FindByIdPlantUseCaseInputDTO
+func (h *GardenHandler) DeleteGardenHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases_garden.DeleteGardenUseCaseInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
 		return
@@ -146,16 +79,16 @@ func (h *PlantHandler) FindByIdPlantHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	input.UserID = userId
-	plant, err := h.FindByIdPlantUseCase.Execute(r.Context(), input)
+	err = h.DeleteGardenUseCase.Execute(context.Background(), input)
 	if err != nil {
 		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
 		return
 	}
-	utils.JsonResponse(w, http.StatusOK, "success", "Planta encontrada", plant)
+	utils.JsonResponse(w, http.StatusOK, "success", "Jardim deletado com sucesso", nil)
 }
 
-func (h *PlantHandler) FindByNamePlantHandler(w http.ResponseWriter, r *http.Request) {
-	var input usecases_plant.FindByNamePlantUseCaseInputDTO
+func (h *GardenHandler) FindAllGardenHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases_garden.FindAllGardenUseCaseInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
 		return
@@ -167,16 +100,16 @@ func (h *PlantHandler) FindByNamePlantHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 	input.UserId = userId
-	plant, err := h.FindByNamePlantUseCase.Execute(r.Context(), input)
+	gardens, err := h.FindAllGardenUseCase.Execute(context.Background(), input)
 	if err != nil {
 		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
 		return
 	}
-	utils.JsonResponse(w, http.StatusOK, "success", "Planta encontrada", plant)
+	utils.JsonResponse(w, http.StatusOK, "success", "Jardins encontrados", gardens)
 }
 
-func (h *PlantHandler) FindBySpecieNamePlantHandler(w http.ResponseWriter, r *http.Request) {
-	var input usecases_plant.FindBySpecieNamePlantUseCaseInputDTO
+func (h *GardenHandler) FindByIdGardenHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases_garden.FindByIdGardenUseCaseInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
 		return
@@ -188,16 +121,16 @@ func (h *PlantHandler) FindBySpecieNamePlantHandler(w http.ResponseWriter, r *ht
 		return
 	}
 	input.UserId = userId
-	plants, err := h.FindBySpecieNamePlantUseCase.Execute(r.Context(), input)
+	garden, err := h.FindByIdGardenUseCase.Execute(context.Background(), input)
 	if err != nil {
 		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
 		return
 	}
-	utils.JsonResponse(w, http.StatusOK, "success", "Plantas encontradas", plants)
+	utils.JsonResponse(w, http.StatusOK, "success", "Jardim encontrado", garden)
 }
 
-func (h *PlantHandler) UpdatePlantHandler(w http.ResponseWriter, r *http.Request) {
-	var input usecases_plant.UpdatePlantUseCaseInputDTO
+func (h *GardenHandler) UpdateGardenHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases_garden.UpdateGardenUseCaseInputDTO
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
 		return
@@ -209,10 +142,73 @@ func (h *PlantHandler) UpdatePlantHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	input.UserID = userId
-	plant, err := h.UpdatePlantUseCase.Execute(r.Context(), input)
+	garden, err := h.UpdateGardenUseCase.Execute(context.Background(), input)
 	if err != nil {
 		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
 		return
 	}
-	utils.JsonResponse(w, http.StatusOK, "success", "Planta atualizada com sucesso", plant)
+	utils.JsonResponse(w, http.StatusOK, "success", "Jardim atualizado com sucesso", garden)
+}
+
+func (h *GardenHandler) FindByLocationGardenHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases_garden.FindByLocationGardenUseCaseInputDTO
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
+		return
+	}
+	auth := r.Header.Get("Authorization")
+	userId, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
+	if err != nil {
+		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
+		return
+	}
+	input.UserId = userId
+	gardens, err := h.FindByLocationGardenUseCase.Execute(context.Background(), input)
+	if err != nil {
+		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
+		return
+	}
+	utils.JsonResponse(w, http.StatusOK, "success", "Jardins encontrados", gardens)
+}
+
+func (h *GardenHandler) FindByNameGardenHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases_garden.FindByNameGardenUseCaseInputDTO
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
+		return
+	}
+	auth := r.Header.Get("Authorization")
+	userId, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
+	if err != nil {
+		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
+		return
+	}
+	input.UserId = userId
+	gardens, err := h.FindByNameGardenUseCase.Execute(context.Background(), input)
+	if err != nil {
+		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
+		return
+	}
+	utils.JsonResponse(w, http.StatusOK, "success", "Jardins encontrados", gardens)
+}
+
+func (h *GardenHandler) FindByCategoryNameGardenHandler(w http.ResponseWriter, r *http.Request) {
+	var input usecases_garden.FindByCategoryNameGardenUseCaseInputDTO
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		utils.JsonResponse(w, http.StatusBadRequest, "error", "Erro ao decodificar a requisição", nil)
+		return
+	}
+	auth := r.Header.Get("Authorization")
+	userId, err := services.ExtractUserIDFromToken(auth, services.NewJWTService(os.Getenv("JWT_SECRET_KEY")))
+	if err != nil {
+		utils.JsonResponse(w, http.StatusUnauthorized, "error", "Token inválido ou expirado", nil)
+		return
+	}
+	input.UserId = userId
+	gardens, err := h.FindByCategoryNameGardenUseCase.Execute(context.Background(), input)
+	if err != nil {
+		utils.JsonResponse(w, http.StatusInternalServerError, "error", err.Error(), nil)
+		return
+	}
+	utils.JsonResponse(w, http.StatusOK, "success", "Jardins encontrados", gardens)
 }
