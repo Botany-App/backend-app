@@ -31,7 +31,7 @@ func InitDB() (*sql.DB, *redis.Client, error) {
 
 func ConnectPG() (*sql.DB, error) {
 
-	postgresURL := os.Getenv("POSTGRES_URL")
+	postgresURL := os.Getenv("DATABASE_URL")
 	if postgresURL == "" {
 		log.Fatal("POSTGRES_URL is not set")
 	}
