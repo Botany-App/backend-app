@@ -1,5 +1,5 @@
 # Etapa 1: Construção do binário
-FROM golang:1.21 AS builder
+FROM golang:1.22.3 AS builder
 
 # Configura o diretório de trabalho
 WORKDIR /app
