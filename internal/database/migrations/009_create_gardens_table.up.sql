@@ -17,3 +17,13 @@ CREATE TABLE gardens (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_user_garden FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE garden_plant(
+    id UUID PRIMARY KEY,
+    garden_id UUID NOT NULL,
+    plant_id UUID NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_garden_plant FOREIGN KEY (garden_id) REFERENCES gardens(id) ON DELETE CASCADE,
+    CONSTRAINT fk_plant_garden FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE CASCADE
+)

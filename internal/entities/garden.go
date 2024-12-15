@@ -9,45 +9,45 @@ import (
 )
 
 type Garden struct {
-	Id                 string    `json:"id"`
-	UserId             string    `json:"user_id"`
-	GardenName         string    `json:"garden_name"`
-	GardenDescription  string    `json:"garden_description"`
-	GardenLocation     string    `json:"garden_location"`
-	TotalArea          float64   `json:"total_area"`
-	CurrentingHeigth   float64   `json:"currenting_heigth"`
-	CurrentingWidth    float64   `json:"currenting_width"`
-	PlantingDate       time.Time `json:"planting_date"`
-	LastIrrigation     time.Time `json:"last_irrigation"`
-	LastFertilization  time.Time `json:"last_fertilization"`
-	Irrigation_week    int       `json:"irrigation_week"`
-	Sun_Exposure       int       `json:"sun_exposure"`
-	Fertilization_week int       `json:"fertilization_week"`
-	CreatedAt          time.Time `json:"created_at"`
-	UpdatedAt          time.Time `json:"updated_at"`
-	CategoriesPlantId  []string  `json:"categories_plant"`
-	PlantsId           []string  `json:"plants_id"`
+	Id                string    `json:"id"`
+	UserId            string    `json:"user_id"`
+	GardenName        string    `json:"garden_name"`
+	GardenDescription string    `json:"garden_description"`
+	GardenLocation    string    `json:"garden_location"`
+	TotalArea         float64   `json:"total_area"`
+	CurrentingHeight  float64   `json:"currenting_heigth"`
+	CurrentingWidth   float64   `json:"currenting_width"`
+	PlantingDate      time.Time `json:"planting_date"`
+	LastIrrigation    time.Time `json:"last_irrigation"`
+	LastFertilization time.Time `json:"last_fertilization"`
+	IrrigationWeek    int       `json:"irrigation_week"`
+	SunExposure       int       `json:"sun_exposure"`
+	FertilizationWeek int       `json:"fertilization_week"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+	CategoriesPlantId []string  `json:"categories_plant"`
+	PlantsId          []string  `json:"plants_id"`
 }
 
 type GardenOutputDTO struct {
-	Id                 string          `json:"id"`
-	UserId             string          `json:"user_id"`
-	GardenName         string          `json:"garden_name"`
-	GardenDescription  string          `json:"garden_description"`
-	GardenLocation     string          `json:"garden_location"`
-	TotalArea          float64         `json:"total_area"`
-	CurrentingHeigth   float64         `json:"currenting_heigth"`
-	CurrentingWidth    float64         `json:"currenting_width"`
-	PlantingDate       time.Time       `json:"planting_date"`
-	LastIrrigation     time.Time       `json:"last_irrigation"`
-	LastFertilization  time.Time       `json:"last_fertilization"`
-	Irrigation_week    int             `json:"irrigation_week"`
-	Sun_Exposure       int             `json:"sun_exposure"`
-	Fertilization_week int             `json:"fertilization_week"`
-	CreatedAt          time.Time       `json:"created_at"`
-	UpdatedAt          time.Time       `json:"updated_at"`
-	CategoriesPlant    []CategoryPlant `json:"categories_plant"`
-	Plants             []Plant         `json:"plants"`
+	Id                string          `json:"id"`
+	UserId            string          `json:"user_id"`
+	GardenName        string          `json:"garden_name"`
+	GardenDescription string          `json:"garden_description"`
+	GardenLocation    string          `json:"garden_location"`
+	TotalArea         float64         `json:"total_area"`
+	CurrentingHeight  float64         `json:"currenting_heigth"`
+	CurrentingWidth   float64         `json:"currenting_width"`
+	PlantingDate      time.Time       `json:"planting_date"`
+	LastIrrigation    time.Time       `json:"last_irrigation"`
+	LastFertilization time.Time       `json:"last_fertilization"`
+	IrrigationWeek    int             `json:"irrigation_week"`
+	SunExposure       int             `json:"sun_exposure"`
+	FertilizationWeek int             `json:"fertilization_week"`
+	CreatedAt         time.Time       `json:"created_at"`
+	UpdatedAt         time.Time       `json:"updated_at"`
+	CategoriesPlant   []CategoryPlant `json:"categories_plant"`
+	Plants            []Plant         `json:"plants"`
 }
 
 type GardenRepository interface {
@@ -57,6 +57,8 @@ type GardenRepository interface {
 	FindByLocation(ctx context.Context, userId, location string) ([]*GardenOutputDTO, error)
 	FindByCategoryName(ctx context.Context, userId, categoryName string) ([]*GardenOutputDTO, error)
 	FindAll(ctx context.Context, userId string) ([]*GardenOutputDTO, error)
+	Update(ctx context.Context, garden *Garden) error
+	Delete(ctx context.Context, userId, id string) error
 }
 
 func NewGarden(
@@ -104,22 +106,22 @@ func NewGarden(
 	}
 
 	return &Garden{
-		Id:                 uuid.New().String(),
-		GardenName:         name,
-		GardenLocation:     location,
-		GardenDescription:  description,
-		TotalArea:          area,
-		CurrentingHeigth:   heigth,
-		CurrentingWidth:    width,
-		PlantingDate:       plantingDate,
-		LastIrrigation:     lastIrrigation,
-		LastFertilization:  lastFertilization,
-		Irrigation_week:    irrigationWeek,
-		Sun_Exposure:       sunExposure,
-		Fertilization_week: fertilizationWeek,
-		CategoriesPlantId:  categoriesPlantId,
-		PlantsId:           plantsId,
-		CreatedAt:          time.Now(),
-		UpdatedAt:          time.Now(),
+		Id:                uuid.New().String(),
+		GardenName:        name,
+		GardenLocation:    location,
+		GardenDescription: description,
+		TotalArea:         area,
+		CurrentingHeight:  heigth,
+		CurrentingWidth:   width,
+		PlantingDate:      plantingDate,
+		LastIrrigation:    lastIrrigation,
+		LastFertilization: lastFertilization,
+		IrrigationWeek:    irrigationWeek,
+		SunExposure:       sunExposure,
+		FertilizationWeek: fertilizationWeek,
+		CategoriesPlantId: categoriesPlantId,
+		PlantsId:          plantsId,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}, nil
 }

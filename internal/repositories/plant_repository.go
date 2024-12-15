@@ -736,7 +736,6 @@ func (r *PlantRepositoryImpl) Update(ctx context.Context, plant *entities.Plant)
 }
 
 func (r *PlantRepositoryImpl) DeletePlantPG(ctx context.Context, userID, plantID string) error {
-	log.Printf("Deletando planta no PostgreSQL: plantID=%s, userID=%s\n", plantID, userID)
 
 	if userID == "" || plantID == "" {
 		log.Println("Erro: ID do usuário ou da planta não fornecido.")
