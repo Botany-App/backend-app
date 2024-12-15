@@ -3,7 +3,6 @@ package usecases_plant
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/lucasBiazon/botany-back/internal/entities"
@@ -42,7 +41,6 @@ func NewUpdatePlantUseCase(plantRepository entities.PlantRepository) *UpdatePlan
 
 func (u *UpdatePlantUseCase) Execute(ctx context.Context, input UpdatePlantUseCaseInputDTO) (*entities.PlantWithCategory, error) {
 	// Verificar se a planta existe
-	log.Println(input.UserID, input.ID)
 	existingPlant, err := u.PlantRepo.FindByID(ctx, input.UserID, input.ID)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao buscar planta: %w", err)

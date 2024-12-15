@@ -75,7 +75,6 @@ func (uc *CreatePlantUseCase) Execute(ctx context.Context, input CreatePlantUseC
 	}
 
 	estimatedHarvestDate := CalculateEstimatedHarvestDate(newPlant.PlantingDate, newPlant.EstimatedHarvestDate, input.SpecieHaverstTime)
-	log.Print("Estimated Harvest Date: ", estimatedHarvestDate)
 	newPlant.EstimatedHarvestDate = estimatedHarvestDate
 	id, err := uc.PlantRepository.Create(ctx, newPlant)
 	if err != nil {
